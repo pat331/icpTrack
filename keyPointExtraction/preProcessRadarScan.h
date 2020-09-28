@@ -15,4 +15,4 @@ using namespace std;
 Mat prewittOperator(Mat radarScanImage);
 Mat getMatrixSPrime(Mat radarScanImage);
 // Mat getMatrixH(Mat prewittImage, Mat SPrime);
-Vector2fVector getIndicesOfElementsInDescendingOrder(Mat prewittImage);
+void getIndicesOfElementsInDescendingOrder(Mat prewittImage);

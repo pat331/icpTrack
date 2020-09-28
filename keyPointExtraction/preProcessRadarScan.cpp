@@ -13,6 +13,8 @@
 
 using namespace std;
 using namespace cv;
+using namespace pr;
+
 
 Mat prewittOperator(Mat radarScanImage){
 
@@ -79,12 +81,40 @@ Mat getMatrixSPrime(Mat radarScanImage){
 //
 // }
 
-Vector2fVector getIndicesOfElementsInDescendingOrder(Mat prewittImage){
+void getIndicesOfElementsInDescendingOrder(Mat prewittImage){
 
+  int numberOfPowerReadings = (int) (prewittImage.cols * prewittImage.rows); // number of power readings in a Scan
+  Vector3fVector indices(numberOfPowerReadings); // Initialize the dimension of indices vector
+  // for (size_t k = 0; k < indices.size(); k++) {  // Initialize the values of the indices vectors
+  //   indices[k](0) = -1; // Numero colonna nell'immagine
+  //   indices[k](1) = -1; // Numero riga nell'immagine
+  //   indices[k](2) = -255; // Valore Pixel
+  // }
+
+  int valuePixel;
+  std::cout << "numberOfPowerReadings "<< numberOfPowerReadings << std::endl;
+  std::cout << "indices.size() "<< indices.size() << std::endl;
+  std::cout << "colonne "<< prewittImage.cols << std::endl;
+  std::cout << "righe "<< prewittImage.rows << std::endl;
+
+  int i = 0;
   for (int x = 0; x < prewittImage.cols; x++) {
     for (int y = 0; y < prewittImage.rows; y++) {
-      /* code */
+      valuePixel = (int) prewittImage.at<uchar>(Point(x,y));
+
+      indices[i](0) = x;
+      indices[i](1) = y;
+      indices[i](2) = valuePixel;
+      i++;
     }
   }
+  // Ordino il vettore degli indici
+  // sort using a lambda expression
+  std::sort(indices.begin(), indices.end(), [](Eigen::Vector3f a, Eigen::Vector3f b) {
+      return a(2) > b(2);
+  });
 
+  // for (size_t g = 0; g < indices.size(); g++) {
+  //   std::cout << "prova indici   "<< indices[g](2) << std::endl;
+  // }
 }

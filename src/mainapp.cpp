@@ -96,6 +96,8 @@ int main(int argc, char *argv[]){
     cv::waitKey();
     //
 
+    getIndicesOfElementsInDescendingOrder(prewitt);
+
     cropped = cropRadarScan(radarScanImage);
     croppedSucc = cropRadarScan(radarScanImageSucc);
 
@@ -175,9 +177,9 @@ int main(int argc, char *argv[]){
 
     }
 
-    // std::string prewittImage = "prewitt  ";
-    // cv::namedWindow(prewittImage, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(prewittImage, prewitt); //show image.
+    // std::string image = "Normale  ";
+    // cv::namedWindow(image, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(image, radarScanImage); //show image.
     // cv::waitKey();
 
 
