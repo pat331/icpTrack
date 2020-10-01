@@ -16,9 +16,97 @@ using namespace cv;
 using namespace pr;
 
 
+void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
+
+  Mat HMatrix;
+  Mat prewittImage;
+  Mat SPrime;
+  Mat cart;
+
+  int rows = radarScanImage.rows;
+  int cols = radarScanImage.cols;
+  Mat_<float> R(rows,cols);
+  R = Mat::zeros(rows, cols, CV_32FC1);
+  std::cout << "SIZE DI R  "<< R.size()  << std::endl;
+
+  prewittImage = prewittOperator(radarScanImage);
+  SPrime = getMatrixSPrime(radarScanImage);
+  HMatrix = getMatrixH(prewittImage, SPrime);
+
+  Vector3fVector indicesMatrixH = getIndicesOfElementsInDescendingOrder(HMatrix);
+
+  int l=0;
+  int iter=0;
+  int noneInR;
+  int anyFalseInR = 0;
+  float a,r; // Paul Newman notation for angle e range
+  float valuePixelSPrime, valuePixelR;
+  Eigen::Vector2f rangeBoundaries;
+  Vector3fVector markedRegion;
+  Eigen::Vector3f slice;
+
+  do {
+
+    r = indicesMatrixH[iter](0);
+    a = indicesMatrixH[iter](1);
+    noneInR = 0;
+
+    if (R.at<float>(Point(r, a)) == 0) { // point(a,r) must not be already in the region R
+      rangeBoundaries = findRangeBoundaries(a,r,SPrime);
+      for (int i = (int) rangeBoundaries(0); i <= (int) rangeBoundaries(1); i++) {
+        if (R.at<float>(Point(i, a)) == 1) {
+          // not a new region --> no increment of value l
+          noneInR = 1;
+
+          for (size_t k = 0; k < markedRegion.size(); k++) {
+            if (markedRegion[k](0) == a) {
+
+              if (markedRegion[k](1) == rangeBoundaries(1)) {
+                markedRegion[k](1) = rangeBoundaries(0);
+              }
+              if (markedRegion[k](2) == rangeBoundaries(0)) {
+                markedRegion[k](2) = rangeBoundaries(1);
+              }
+            }
+          }
+
+        }
+        if (R.at<float>(Point(i, a)) == 0) {
+          // mark the position as a member of the region
+          R.at<float>(Point(i, a)) = 1;
+          anyFalseInR++;
+        }
+      }
+      if (noneInR == 0) {
+        l++;
+        slice << a,
+                 rangeBoundaries(0),
+                 rangeBoundaries(1);
+
+        markedRegion.push_back(slice);
+      }
+    }
+
+    iter++;
+
+  } while(l<maxNumberKeyPoint && anyFalseInR < rows*cols); // until the number of landMark is reach or we explored every point
+
+  //  Riordino il vettore delle markedRegion
+
+  // for (int angle=0; angle<cols; angle ++) {
+  //   for (int range = 0; range < rows; range++) {
+  //     int continuosRegion = 0;
+  //     if(R.at<float>(Point(range, angle)) == 1 && continuosRegion == 0){
+  //
+  //     }
+  //   }
+  // }
+}
+////////////////////////////////////////////////////////////////////////////////
 Mat prewittOperator(Mat radarScanImage){
 
-  Mat prewittX, prewittY;
+  Mat_<float> prewittX;
+  Mat_<float> prewittY;
   Mat prewittQuadX, prewittQuadY, prewittQuadImage;
   Mat prewittImageProva;
   // Mat prewittImage;
@@ -41,16 +129,18 @@ Mat prewittOperator(Mat radarScanImage){
   // multiply(prewittX, prewittX, prewittQuadX);
   // multiply(prewittY, prewittY, prewittQuadY);
   // add(prewittQuadX, prewittQuadY, prewittQuadImage);
-  Mat prewittImage(prewittX.rows, prewittX.cols, CV_8UC1, Scalar(0));
+
+  // Mat prewittImage(prewittX.rows, prewittX.cols, CV_8UC1, Scalar(0));
+  Mat_<float> prewittImage(prewittX.rows,prewittX.cols);
 
   for (int x = 0; x < prewittX.cols; x++) {
     for (int y = 0; y < prewittX.rows; y++) {
-      double valuePixel, valuePixelX, valuePixelY, valuePixelSumAndSquare;
+      float valuePixel, valuePixelX, valuePixelY, valuePixelSumAndSquare;
 
-      valuePixelX = (int)prewittX.at<uchar>(Point(x, y));
-      valuePixelY = (int)prewittY.at<uchar>(Point(x, y));
+      valuePixelX = prewittX.at<float>(Point(x, y));
+      valuePixelY = prewittY.at<float>(Point(x, y));
       valuePixel = sqrt(pow(valuePixelX,2) + pow(valuePixelY,2));
-      prewittImage.at<uchar>(Point(x, y)) = (int)valuePixel;
+      prewittImage.at<float>(Point(x, y)) = valuePixel; // remember that for visualize the value in an image you have to scale valuePixel to 255.
     }
   }
 
@@ -59,48 +149,53 @@ Mat prewittOperator(Mat radarScanImage){
 
 Mat getMatrixSPrime(Mat radarScanImage){
 
-  int valuePixelSPrime, valuePixelS;
+  float valuePixelSPrime, valuePixelS;
   Scalar meanValueS = cv::mean( radarScanImage );
-  Mat SPrime(radarScanImage.rows, radarScanImage.cols, CV_8UC1, Scalar(0));
+  std::cout << "mean" <<  meanValueS(0)<< std::endl;
+  Mat_<float> SPrime(radarScanImage.rows,radarScanImage.cols);
 
   for (int x = 0; x < radarScanImage.cols; x++) {
     for (int y = 0; y < radarScanImage.rows; y++) {
 
-      valuePixelS = (int)radarScanImage.at<uchar>(Point(x,y));
-      valuePixelSPrime = valuePixelS - (int) meanValueS(0);
-      SPrime.at<uchar>(Point(x,y)) = valuePixelSPrime;
-
+      valuePixelS = radarScanImage.at<float>(Point(x,y));
+      valuePixelSPrime = valuePixelS -  meanValueS(0);
+      SPrime.at<float>(Point(x,y)) = valuePixelSPrime;
     }
   }
 
   return SPrime;
 }
 
-// Mat getMatrixH(Mat prewittImage, Mat SPrime){
-//
-//
-// }
+Mat getMatrixH(Mat prewittImage, Mat SPrime){
+  int rows = prewittImage.rows;
+  int cols = prewittImage.cols;
+  Mat_<float> HMatrix(rows,cols);
 
-void getIndicesOfElementsInDescendingOrder(Mat prewittImage){
+  float valuePixelPrewitt;
+  float valuePixelSPrime;
+  float valuePixelH;
+
+  for (int x = 0; x < prewittImage.cols; x++) {
+    for (int y = 0; y < prewittImage.rows; y++) {
+      valuePixelPrewitt = prewittImage.at<float>(Point(x,y));
+      valuePixelSPrime = SPrime.at<float>(Point(x,y));
+      valuePixelH = (1 - valuePixelPrewitt)* valuePixelSPrime;
+      HMatrix.at<float>(Point(x,y)) = valuePixelH;
+    }
+  }
+  return HMatrix;
+}
+
+Vector3fVector getIndicesOfElementsInDescendingOrder(Mat prewittImage){
 
   int numberOfPowerReadings = (int) (prewittImage.cols * prewittImage.rows); // number of power readings in a Scan
   Vector3fVector indices(numberOfPowerReadings); // Initialize the dimension of indices vector
-  // for (size_t k = 0; k < indices.size(); k++) {  // Initialize the values of the indices vectors
-  //   indices[k](0) = -1; // Numero colonna nell'immagine
-  //   indices[k](1) = -1; // Numero riga nell'immagine
-  //   indices[k](2) = -255; // Valore Pixel
-  // }
-
-  int valuePixel;
-  std::cout << "numberOfPowerReadings "<< numberOfPowerReadings << std::endl;
-  std::cout << "indices.size() "<< indices.size() << std::endl;
-  std::cout << "colonne "<< prewittImage.cols << std::endl;
-  std::cout << "righe "<< prewittImage.rows << std::endl;
+  float valuePixel;
 
   int i = 0;
   for (int x = 0; x < prewittImage.cols; x++) {
     for (int y = 0; y < prewittImage.rows; y++) {
-      valuePixel = (int) prewittImage.at<uchar>(Point(x,y));
+      valuePixel = prewittImage.at<float>(Point(x,y));
 
       indices[i](0) = x;
       indices[i](1) = y;
@@ -113,8 +208,56 @@ void getIndicesOfElementsInDescendingOrder(Mat prewittImage){
   std::sort(indices.begin(), indices.end(), [](Eigen::Vector3f a, Eigen::Vector3f b) {
       return a(2) > b(2);
   });
+  return indices;
+}
 
-  // for (size_t g = 0; g < indices.size(); g++) {
-  //   std::cout << "prova indici   "<< indices[g](2) << std::endl;
-  // }
+Eigen::Vector2f findRangeBoundaries(float a, float r, Mat SPrime){
+
+  float valuePixelSPrime;
+  float rIterHigh = r+1;
+  float rIterLow = r-1;
+  float rHigh, rLow;
+  int upperBound = 0;
+  int lowBound = 0;
+  //Get rHigh;
+  valuePixelSPrime = SPrime.at<float>(Point(r, a));
+
+  do {
+    // valuePixelSPrime = SPrime.at<float>(Point(a, rIterHigh));
+    valuePixelSPrime = SPrime.at<float>(Point(rIterHigh, a));
+    if (valuePixelSPrime < 0) {
+      rHigh = rIterHigh;
+      upperBound = 1;
+    }
+    rIterHigh++;
+
+    if (rIterHigh == SPrime.cols) { // Check if your out of border
+      rHigh = rIterHigh;
+      break;
+    }
+
+  } while(upperBound == 0);
+
+  //Get rLow;
+  do {
+    valuePixelSPrime = SPrime.at<float>(Point(rIterLow, a));
+
+    if (valuePixelSPrime < 0) {
+      rLow = rIterLow;
+      lowBound = 1;
+    }
+
+    if (rIterLow == 0) { // Check if your out of border
+      rLow = rIterLow;
+      break;
+    }
+
+    rIterLow--;
+  } while(lowBound == 0);
+
+  Eigen::Vector2f rangeBoundaries;
+  rangeBoundaries(0) = rLow;
+  rangeBoundaries(1) = rHigh;
+
+  return rangeBoundaries;
 }

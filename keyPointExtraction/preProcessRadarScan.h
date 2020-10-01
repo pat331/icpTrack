@@ -11,8 +11,12 @@
 
 using namespace cv;
 using namespace std;
+using namespace pr;
+
+void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint);
 
 Mat prewittOperator(Mat radarScanImage);
 Mat getMatrixSPrime(Mat radarScanImage);
-// Mat getMatrixH(Mat prewittImage, Mat SPrime);
-void getIndicesOfElementsInDescendingOrder(Mat prewittImage);
+Mat getMatrixH(Mat prewittImage, Mat SPrime);
+Vector3fVector getIndicesOfElementsInDescendingOrder(Mat prewittImage);
+Eigen::Vector2f findRangeBoundaries(float a, float r, Mat SPrime);

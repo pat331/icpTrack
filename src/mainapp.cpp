@@ -5,14 +5,6 @@
 #include <cstdint>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
-// #include<opencv2/imgproc/imgproc.hpp>
-// #include "opencv2/highgui.hpp"
-
-// #include "opencv2/imgproc/types_c.h"
-// #include "opencv2/imgproc/imgproc_c.h"
-// #include <opencv/highgui.h>
-// #include "opencv2/core/core.hpp"
-// #include <opencv2/nonfree/features2d.hpp>
 #include <opencv2/features2d.hpp>
 #include <opencv2/xfeatures2d.hpp>
 using namespace cv;
@@ -77,35 +69,58 @@ int main(int argc, char *argv[]){
     cv::Mat locations;   // output, locations of non-zero pixels
 
     cv::Mat radarScanImage = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
+    radarScanImage = cropRadarScan(radarScanImage);
+    // convert rardarscanImage in float
+    radarScanImage.convertTo(radarScanImage, CV_32FC1, 1/255.0);
     cv::Mat radarScanImageSucc = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
     // Prova prewittOperator
-    Mat prewitt;
+    Mat_<float> prewitt;
     prewitt = prewittOperator(radarScanImage);
 
-    std::string prewittImage = "prewitt  ";
-    cv::namedWindow(prewittImage, cv::WINDOW_AUTOSIZE);
-    cv::imshow(prewittImage, prewitt); //show image.
-    cv::waitKey();
+    // std::string prewittImage = "prewitt  ";
+    // cv::namedWindow(prewittImage, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(prewittImage, prewitt); //show image.
+    // cv::waitKey();
+    //
+    // std::string radar = "scan  ";
+    // cv::namedWindow(radar, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(radar, radarScanImage); //show image.
+    // cv::waitKey();
 
     Mat SPrime;
     SPrime = getMatrixSPrime(radarScanImage);
+
+    Mat HMatrix;
+    HMatrix = getMatrixH(prewitt, SPrime);
+    // getMatrixH(prewitt, SPrime);
 
     std::string sprime = "sprime  ";
     cv::namedWindow(sprime, cv::WINDOW_AUTOSIZE);
     cv::imshow(sprime, SPrime); //show image.
     cv::waitKey();
-    //
 
-    getIndicesOfElementsInDescendingOrder(prewitt);
+    // std::string hm = "sprime  ";
+    // cv::namedWindow(hm, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(hm, HMatrix); //show image.
+    // cv::waitKey();
+    // //
 
-    cropped = cropRadarScan(radarScanImage);
-    croppedSucc = cropRadarScan(radarScanImageSucc);
+    // Vector3fVector indici;
+    // indici = getIndicesOfElementsInDescendingOrder(prewitt);
+
+    int lmax = 70;
+    keyPointExtraction(radarScanImage, lmax);
+
+    // cropped = cropRadarScan(radarScanImage);
+    // croppedSucc = cropRadarScan(radarScanImageSucc);
 
     double maxRadius = 400.0;
     Point2f center( 400, 400);
     int flags = INTER_LINEAR + WARP_FILL_OUTLIERS + WARP_INVERSE_MAP;
 
-    warpPolar(cropped, cart, Size(800,800) , center, maxRadius,  flags);
+    warpPolar(radarScanImage, cart, Size(800,800) , center, maxRadius,  flags);
+
+    // warpPolar(cropped, cart, Size(800,800) , center, maxRadius,  flags);
     // cv::linearPolar(cropped, cart, Point2f(cropped.cols / 2, cropped.rows / 2), (cropped.rows / 2), CV_INTER_LINEAR | CV_WARP_INVERSE_MAP);
     // cv::linearPolar(croppedSucc, cartSucc, Point2f(croppedSucc.cols / 2, croppedSucc.rows / 2), (croppedSucc.rows / 2), CV_INTER_LINEAR | CV_WARP_INVERSE_MAP);
     // cart = cropRadarScan(cart, 1550, 0, 400, 400);
@@ -177,10 +192,10 @@ int main(int argc, char *argv[]){
 
     }
 
-    // std::string image = "Normale  ";
-    // cv::namedWindow(image, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(image, radarScanImage); //show image.
-    // cv::waitKey();
+    std::string matriceH = "Normale  ";
+    cv::namedWindow(matriceH, cv::WINDOW_AUTOSIZE);
+    cv::imshow(matriceH, HMatrix); //show image.
+    cv::waitKey();
 
 
     std::string windowNameCanny1 = "cartesian point  ";
