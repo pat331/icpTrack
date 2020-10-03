@@ -70,9 +70,14 @@ int main(int argc, char *argv[]){
 
     cv::Mat radarScanImage = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
     radarScanImage = cropRadarScan(radarScanImage);
+
+    cv::Mat radarScanImageSucc = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
+    radarScanImageSucc = cropRadarScan(radarScanImageSucc);
+
     // convert rardarscanImage in float
     radarScanImage.convertTo(radarScanImage, CV_32FC1, 1/255.0);
-    cv::Mat radarScanImageSucc = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
+    radarScanImageSucc.convertTo(radarScanImageSucc, CV_32FC1, 1/255.0);
+
     // Prova prewittOperator
     Mat_<float> prewitt;
     prewitt = prewittOperator(radarScanImage);
@@ -108,9 +113,10 @@ int main(int argc, char *argv[]){
     // Vector3fVector indici;
     // indici = getIndicesOfElementsInDescendingOrder(prewitt);
 
-    int lmax = 70;
+    int lmax = 150;
     keyPointExtraction(radarScanImage, lmax);
-
+    keyPointExtraction(radarScanImageSucc, lmax);
+    // keyPointExtraction(radarScanImageSucc, lmax);
     // cropped = cropRadarScan(radarScanImage);
     // croppedSucc = cropRadarScan(radarScanImageSucc);
 

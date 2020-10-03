@@ -27,6 +27,8 @@ void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
   int cols = radarScanImage.cols;
   Mat_<float> R(rows,cols);
   R = Mat::zeros(rows, cols, CV_32FC1);
+  Mat_<float> keyPoint(rows,cols);
+  keyPoint = Mat::zeros(rows, cols, CV_32FC1);
   std::cout << "SIZE DI R  "<< R.size()  << std::endl;
 
   prewittImage = prewittOperator(radarScanImage);
@@ -44,6 +46,7 @@ void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
   Eigen::Vector2f rangeBoundaries;
   Vector3fVector markedRegion;
   Eigen::Vector3f slice;
+  Vector2fVector finalMarkedRegion;
 
   do {
 
@@ -92,14 +95,87 @@ void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
   } while(l<maxNumberKeyPoint && anyFalseInR < rows*cols); // until the number of landMark is reach or we explored every point
 
   //  Riordino il vettore delle markedRegion
+  std::sort(markedRegion.begin(), markedRegion.end(), [](Eigen::Vector3f a, Eigen::Vector3f b) {
+      return -a(0) > -b(0); // ordine crescente
+  });
 
+  float qLow, qUpper, qAngle;
+  int potentialLandmark;
+  float maxPower;
+  float rangeOfLandmark;
+
+  for (size_t q = 0; q < markedRegion.size(); q++) {
+    qAngle = markedRegion[q](0);
+    qLow = markedRegion[q](1);
+    qUpper = markedRegion[q](2);
+
+    for (int h = qLow; h < qUpper; h++) {
+      if (qAngle > 0) {
+        if(R.at<float>(Point(h, qAngle-1)) == 1 ){
+          potentialLandmark = 1;
+        }
+      }
+      if (qAngle < rows) {
+        if(R.at<float>(Point(h, qAngle-1)) == 1 ){
+          potentialLandmark = 1;
+        }
+      }
+      if (potentialLandmark ==1) {
+        maxPower = R.at<float>(Point(qLow, qAngle));
+        rangeOfLandmark = qLow;
+        for (int l = qLow+1; l < qUpper; l++) {
+          if (R.at<float>(Point(l, qAngle))> maxPower) {
+          rangeOfLandmark = l;
+          }
+        }
+        keyPoint.at<float>(Point(rangeOfLandmark, qAngle)) = 1;
+        break;
+      }
+    }
+  }
+  Mat cartKeyPoint;
+  double maxRadius = 500.0;
+  Point2f center( 500, 500);
+  int flags =  WARP_INVERSE_MAP;
+
+  warpPolar(keyPoint, cartKeyPoint, Size(1000,1000) , center, maxRadius,  flags);
+
+  std::string superlandmark = "LANDMARK FUCK YEAH  ";
+  cv::namedWindow(superlandmark, cv::WINDOW_AUTOSIZE);
+  cv::imshow(superlandmark, cartKeyPoint); //show image.
+  cv::waitKey();
+
+  std::string land = "LANDMARK ";
+  cv::namedWindow(land, cv::WINDOW_AUTOSIZE);
+  cv::imshow(land, keyPoint); //show image.
+  cv::waitKey();
+  // for (size_t q = 0; q < markedRegion.size(); q++) {
+  //       float angle = markedRegion[q](0);
+  //       for (size_t qIter = 0; qIter < markedRegion.size(); qIter++) {
+  //         if(angle - markedRegion[qIter](0) >=2 || markedRegion[qIter](0) - angle >=2 || markedRegion[qIter](0) - angle == 0 ){
+  //           // Taking into consideration only adjacent angle --> angle-1 && angle+1
+  //           continue;
+  //         }
+  //         if (angle - markedRegion[qIter](0) == 1 || markedRegion[qIter](0) - angle == 1) {
+  //             // check if the region is not isolated
+  //             low = markedRegion[qIter](1);
+  //             upper = markedRegion[qIter](2);
+  //         }
+  //
+  //
+  //       }
+  // }
+
+
+  // int iterOnMarkedRegion;
+  //
   // for (int angle=0; angle<cols; angle ++) {
-  //   for (int range = 0; range < rows; range++) {
-  //     int continuosRegion = 0;
-  //     if(R.at<float>(Point(range, angle)) == 1 && continuosRegion == 0){
+  //   iterOnMarkedRegion=0;
+  //   do {
+  //     if(markedRegion[iterOnMarkedRegion](0) == angle){
   //
   //     }
-  //   }
+  //   } while(/* condition */);
   // }
 }
 ////////////////////////////////////////////////////////////////////////////////
