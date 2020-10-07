@@ -13,7 +13,7 @@ using namespace cv;
 using namespace std;
 using namespace pr;
 
-void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint);
+Mat keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint);
 
 Mat prewittOperator(Mat radarScanImage);
 Mat getMatrixSPrime(Mat radarScanImage);

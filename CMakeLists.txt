@@ -35,6 +35,7 @@ file(GLOB SOURCES "src/*.cpp")
 
 include_directories(include)
 include_directories(keyPointExtraction)
+include_directories(dataAssociation)
 
 add_executable(radarTest ${SOURCES}
 
@@ -42,6 +43,7 @@ add_executable(radarTest ${SOURCES}
         ../include/data_association.cpp
         ../include/smicp_solver.cpp
         ../keyPointExtraction/preProcessRadarScan.cpp
+        ./dataAssociation/dataAssociationRadar.cpp
 
 )
 #include_directories(include)

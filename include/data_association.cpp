@@ -17,7 +17,7 @@ namespace pr {
 		// Questo è il motivo di questo if osceno
 
 		if(to_points.size() <= from_points.size()){
-			std::cout << "QUI " << std::endl;
+		
 			for (size_t to_iter=0; to_iter<to_points.size(); to_iter++){
 
 				const Eigen::Vector2f& current_point=to_points[to_iter];

@@ -16,12 +16,13 @@ using namespace cv;
 using namespace pr;
 
 
-void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
+Mat keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
 
   Mat HMatrix;
   Mat prewittImage;
   Mat SPrime;
   Mat cart;
+  Mat Rcart;
 
   int rows = radarScanImage.rows;
   int cols = radarScanImage.cols;
@@ -35,6 +36,16 @@ void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
   SPrime = getMatrixSPrime(radarScanImage);
   HMatrix = getMatrixH(prewittImage, SPrime);
 
+  std::string HHH = "h  ";
+  cv::namedWindow(HHH, cv::WINDOW_AUTOSIZE);
+  cv::imshow(HHH, HMatrix); //show image.
+  cv::waitKey();
+
+  std::string rararscannormale = "radarScanImage  ";
+  cv::namedWindow(rararscannormale, cv::WINDOW_AUTOSIZE);
+  cv::imshow(rararscannormale, radarScanImage); //show image.
+  cv::waitKey();
+
   Vector3fVector indicesMatrixH = getIndicesOfElementsInDescendingOrder(HMatrix);
 
   int l=0;
@@ -46,8 +57,8 @@ void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
   Eigen::Vector2f rangeBoundaries;
   Vector3fVector markedRegion;
   Eigen::Vector3f slice;
-  Vector2fVector finalMarkedRegion;
 
+  // Find the matrix R
   do {
 
     r = indicesMatrixH[iter](0);
@@ -99,8 +110,19 @@ void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
       return -a(0) > -b(0); // ordine crescente
   });
 
+  Mat cartKeyPoint;
+  double maxRadius = 500.0;
+  Point2f center( 500, 500);
+  int flags =  WARP_INVERSE_MAP;
+
+  warpPolar(R, Rcart, Size(1000,1000) , center, maxRadius,  flags);
+  // std::string RRR = "R  ";
+  // cv::namedWindow(RRR, cv::WINDOW_AUTOSIZE);
+  // cv::imshow(RRR, Rcart); //show image.
+  // cv::waitKey();
+
   float qLow, qUpper, qAngle;
-  int potentialLandmark;
+  int potentialLandmark=0;
   float maxPower;
   float rangeOfLandmark;
 
@@ -108,47 +130,53 @@ void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
     qAngle = markedRegion[q](0);
     qLow = markedRegion[q](1);
     qUpper = markedRegion[q](2);
+    potentialLandmark = 0;
 
     for (int h = qLow; h < qUpper; h++) {
       if (qAngle > 0) {
         if(R.at<float>(Point(h, qAngle-1)) == 1 ){
-          potentialLandmark = 1;
+          // potentialLandmark = 1;
+          potentialLandmark++;
         }
       }
       if (qAngle < rows) {
         if(R.at<float>(Point(h, qAngle-1)) == 1 ){
-          potentialLandmark = 1;
+          // potentialLandmark = 1;
+          potentialLandmark++;
         }
       }
-      if (potentialLandmark ==1) {
-        maxPower = R.at<float>(Point(qLow, qAngle));
+      // std::cout << "potentialLandmark "<< potentialLandmark  << std::endl;
+      // if (potentialLandmark ==1) {
+      if (potentialLandmark >= 1) {
+        maxPower = HMatrix.at<float>(Point(qLow, qAngle));
         rangeOfLandmark = qLow;
         for (int l = qLow+1; l < qUpper; l++) {
-          if (R.at<float>(Point(l, qAngle))> maxPower) {
+          if (HMatrix.at<float>(Point(l, qAngle))> maxPower) {
           rangeOfLandmark = l;
           }
         }
         keyPoint.at<float>(Point(rangeOfLandmark, qAngle)) = 1;
+          // potentialLandmark = 0;
         break;
       }
     }
   }
-  Mat cartKeyPoint;
-  double maxRadius = 500.0;
-  Point2f center( 500, 500);
-  int flags =  WARP_INVERSE_MAP;
+  // Mat cartKeyPoint;
+  // double maxRadius = 500.0;
+  // Point2f center( 500, 500);
+  // int flags =  WARP_INVERSE_MAP;
 
   warpPolar(keyPoint, cartKeyPoint, Size(1000,1000) , center, maxRadius,  flags);
 
-  std::string superlandmark = "LANDMARK FUCK YEAH  ";
-  cv::namedWindow(superlandmark, cv::WINDOW_AUTOSIZE);
-  cv::imshow(superlandmark, cartKeyPoint); //show image.
-  cv::waitKey();
+  // std::string superlandmark = "LANDMARK FUCK YEAH  ";
+  // cv::namedWindow(superlandmark, cv::WINDOW_AUTOSIZE);
+  // cv::imshow(superlandmark, cartKeyPoint); //show image.
+  // cv::waitKey();
 
-  std::string land = "LANDMARK ";
-  cv::namedWindow(land, cv::WINDOW_AUTOSIZE);
-  cv::imshow(land, keyPoint); //show image.
-  cv::waitKey();
+  // std::string land = "LANDMARK ";
+  // cv::namedWindow(land, cv::WINDOW_AUTOSIZE);
+  // cv::imshow(land, keyPoint); //show image.
+  // cv::waitKey();
   // for (size_t q = 0; q < markedRegion.size(); q++) {
   //       float angle = markedRegion[q](0);
   //       for (size_t qIter = 0; qIter < markedRegion.size(); qIter++) {
@@ -177,6 +205,7 @@ void keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
   //     }
   //   } while(/* condition */);
   // }
+  return cartKeyPoint;
 }
 ////////////////////////////////////////////////////////////////////////////////
 Mat prewittOperator(Mat radarScanImage){
@@ -208,15 +237,26 @@ Mat prewittOperator(Mat radarScanImage){
 
   // Mat prewittImage(prewittX.rows, prewittX.cols, CV_8UC1, Scalar(0));
   Mat_<float> prewittImage(prewittX.rows,prewittX.cols);
+  float valuePixel, valuePixelX, valuePixelY, valuePixelSumAndSquare;
+  float normalizedFactor = 1;
 
   for (int x = 0; x < prewittX.cols; x++) {
     for (int y = 0; y < prewittX.rows; y++) {
-      float valuePixel, valuePixelX, valuePixelY, valuePixelSumAndSquare;
 
       valuePixelX = prewittX.at<float>(Point(x, y));
       valuePixelY = prewittY.at<float>(Point(x, y));
       valuePixel = sqrt(pow(valuePixelX,2) + pow(valuePixelY,2));
       prewittImage.at<float>(Point(x, y)) = valuePixel; // remember that for visualize the value in an image you have to scale valuePixel to 255.
+      if (valuePixel>normalizedFactor) {
+        normalizedFactor = valuePixel;
+      }
+    }
+  }
+  // Normalized the prewitt image
+  for (int x = 0; x < prewittX.cols; x++) {
+    for (int y = 0; y < prewittX.rows; y++) {
+      valuePixel = prewittImage.at<float>(Point(x, y));
+      prewittImage.at<float>(Point(x, y)) = valuePixel/normalizedFactor; // remember that for visualize the value in an image you have to scale valuePixel to 255.
     }
   }
 

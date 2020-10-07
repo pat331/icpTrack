@@ -57,52 +57,85 @@ int main(int argc, char *argv[]){
   // Da ogni radarscan filtrando l'immagine prendo i punti che trovo e li metto tutti dentro un vettore
   std::vector<Vector2fVector> landMarkCartesian;
   string dataFilePng;
-  string dataFilePngSucc;
+  string dataFilePngSucc, dataFilePngSucc2;
+  string dataBikeStrike, dataBikeStrikePrewitt;
+
+  cv::Mat key1, key2, key3;
   // Itero su tutti i radarscan della cartella
-  for(int i = 0; i < 3; i++){
+  for(int i = 0; i < 1; i++){
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];
+    dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
+    dataBikeStrike = "/home/luca/Downloads/Bikesgray.jpg";
+    dataBikeStrikePrewitt = "/home/luca/Downloads/Bikesgray_prewitt.JPG";
 
-    cv::Mat cropped, croppedSucc;
+    cv::Mat cropped, croppedSucc, croppedSucc2;
     cv::Mat cart, cartSucc;
     cv::Mat cartFiltered;
     cv::Mat locations;   // output, locations of non-zero pixels
+    cv::Mat bikeStrike;
+    cv::Mat prewittBike, bikeORIGINAL;
+
+
+    bikeStrike = imread(dataBikeStrike, cv::IMREAD_GRAYSCALE);
+    bikeORIGINAL = imread(dataBikeStrikePrewitt,  CV_32FC1);
 
     cv::Mat radarScanImage = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
     radarScanImage = cropRadarScan(radarScanImage);
 
+
+
+
     cv::Mat radarScanImageSucc = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
     radarScanImageSucc = cropRadarScan(radarScanImageSucc);
+
+    cv::Mat radarScanImageSucc2 = imread(dataFilePngSucc2, cv::IMREAD_GRAYSCALE);
+    radarScanImageSucc2 = cropRadarScan(radarScanImageSucc2);
 
     // convert rardarscanImage in float
     radarScanImage.convertTo(radarScanImage, CV_32FC1, 1/255.0);
     radarScanImageSucc.convertTo(radarScanImageSucc, CV_32FC1, 1/255.0);
+    radarScanImageSucc2.convertTo(radarScanImageSucc2, CV_32FC1, 1/255.0);
+    bikeStrike.convertTo(bikeStrike, CV_32FC1, 1/255.0);
+
+
+
+    prewittBike = prewittOperator(bikeStrike);
+
 
     // Prova prewittOperator
     Mat_<float> prewitt;
     prewitt = prewittOperator(radarScanImage);
 
-    // std::string prewittImage = "prewitt  ";
-    // cv::namedWindow(prewittImage, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(prewittImage, prewitt); //show image.
+    std::string scanPrewittPolar = "scanPrewittPolar ";
+    cv::namedWindow(scanPrewittPolar, cv::WINDOW_AUTOSIZE);
+    cv::imshow(scanPrewittPolar, prewitt); //show image.
+    cv::waitKey();
+
+
+    // PRINT BICLICLETTE PREWITT ////////////////////////////////////////
+    // std::string bho = "prewitt bho ";
+    // cv::namedWindow(bho, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(bho, bikeORIGINAL); //show image.
     // cv::waitKey();
     //
+    // std::string bikebike = "prewitt  ";
+    // cv::namedWindow(bikebike, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(bikebike, prewittBike); //show image.
+    // cv::waitKey();
+    ///////////////////////////////////////////////////////////////////
     // std::string radar = "scan  ";
     // cv::namedWindow(radar, cv::WINDOW_AUTOSIZE);
     // cv::imshow(radar, radarScanImage); //show image.
     // cv::waitKey();
 
-    Mat SPrime;
-    SPrime = getMatrixSPrime(radarScanImage);
 
-    Mat HMatrix;
-    HMatrix = getMatrixH(prewitt, SPrime);
     // getMatrixH(prewitt, SPrime);
 
-    std::string sprime = "sprime  ";
-    cv::namedWindow(sprime, cv::WINDOW_AUTOSIZE);
-    cv::imshow(sprime, SPrime); //show image.
-    cv::waitKey();
+    // std::string sprime = "sprime  ";
+    // cv::namedWindow(sprime, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(sprime, SPrime); //show image.
+    // cv::waitKey();
 
     // std::string hm = "sprime  ";
     // cv::namedWindow(hm, cv::WINDOW_AUTOSIZE);
@@ -113,9 +146,15 @@ int main(int argc, char *argv[]){
     // Vector3fVector indici;
     // indici = getIndicesOfElementsInDescendingOrder(prewitt);
 
-    int lmax = 150;
-    keyPointExtraction(radarScanImage, lmax);
-    keyPointExtraction(radarScanImageSucc, lmax);
+
+    int lmax = 600;
+    // key1 = keyPointExtraction(bikeStrike, lmax);
+    // key2 = keyPointExtraction(bikeORIGINAL, lmax);
+
+    key1 = keyPointExtraction(radarScanImage, lmax);
+    key2 = keyPointExtraction(radarScanImageSucc, lmax);
+    // key3 = keyPointExtraction(radarScanImageSucc2, lmax);
+
     // keyPointExtraction(radarScanImageSucc, lmax);
     // cropped = cropRadarScan(radarScanImage);
     // croppedSucc = cropRadarScan(radarScanImageSucc);
@@ -196,25 +235,51 @@ int main(int argc, char *argv[]){
       //
       landMarkCartesian.back().push_back(pntWorld);
 
+
+
     }
 
-    std::string matriceH = "Normale  ";
-    cv::namedWindow(matriceH, cv::WINDOW_AUTOSIZE);
-    cv::imshow(matriceH, HMatrix); //show image.
+    std::string landmarkprint1 = " landmark scan1 ";
+    cv::namedWindow(landmarkprint1, cv::WINDOW_AUTOSIZE);
+    cv::imshow(landmarkprint1, key1); //show image.
     cv::waitKey();
 
-
-    std::string windowNameCanny1 = "cartesian point  ";
-    cv::namedWindow(windowNameCanny1, cv::WINDOW_AUTOSIZE);
-    cv::imshow(windowNameCanny1, cart); //show image.
+    std::string landmarkprint2 = "landmark scan2  ";
+    cv::namedWindow(landmarkprint2, cv::WINDOW_AUTOSIZE);
+    cv::imshow(landmarkprint2, key2); //show image.
     cv::waitKey();
 
-    std::string windowNameCanny2 = "cartesian point  ";
-    cv::namedWindow(windowNameCanny2, cv::WINDOW_AUTOSIZE);
-    cv::imshow(windowNameCanny2, cartFiltered); //show image.
-    cv::waitKey();
+    // std::string landmarkprint3 = "landmark scan3  ";
+    // cv::namedWindow(landmarkprint3, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(landmarkprint3, key3); //show image.
+    // cv::waitKey();
+    // std::string matriceH = "Normale  ";
+    // cv::namedWindow(matriceH, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(matriceH, HMatrix); //show image.
+    // cv::waitKey();
+    //
+    //
+    // std::string windowNameCanny1 = "cartesian point  ";
+    // cv::namedWindow(windowNameCanny1, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(windowNameCanny1, cart); //show image.
+    // cv::waitKey();
+    //
+    // std::string windowNameCanny2 = "cartesian point  ";
+    // cv::namedWindow(windowNameCanny2, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(windowNameCanny2, cartFiltered); //show image.
+    // cv::waitKey();
 
+    // std::string landmarkprint1 = " landmark scan1 ";
+    // cv::namedWindow(landmarkprint1, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(landmarkprint1, key1); //show image.
+    // cv::waitKey();
+    //
+    // std::string landmarkprint2 = "landmark scan2  ";
+    // cv::namedWindow(landmarkprint2, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(landmarkprint2, key2); //show image.
+    // cv::waitKey();
   }
+
 
   // Initialize images
   // Local view

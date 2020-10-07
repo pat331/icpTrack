@@ -123,6 +123,33 @@ radarTest/fast:
 	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/build
 .PHONY : radarTest/fast
 
+dataAssociation/dataAssociationRadar.o: dataAssociation/dataAssociationRadar.cpp.o
+
+.PHONY : dataAssociation/dataAssociationRadar.o
+
+# target to build an object file
+dataAssociation/dataAssociationRadar.cpp.o:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/dataAssociation/dataAssociationRadar.cpp.o
+.PHONY : dataAssociation/dataAssociationRadar.cpp.o
+
+dataAssociation/dataAssociationRadar.i: dataAssociation/dataAssociationRadar.cpp.i
+
+.PHONY : dataAssociation/dataAssociationRadar.i
+
+# target to preprocess a source file
+dataAssociation/dataAssociationRadar.cpp.i:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/dataAssociation/dataAssociationRadar.cpp.i
+.PHONY : dataAssociation/dataAssociationRadar.cpp.i
+
+dataAssociation/dataAssociationRadar.s: dataAssociation/dataAssociationRadar.cpp.s
+
+.PHONY : dataAssociation/dataAssociationRadar.s
+
+# target to generate assembly for a file
+dataAssociation/dataAssociationRadar.cpp.s:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/dataAssociation/dataAssociationRadar.cpp.s
+.PHONY : dataAssociation/dataAssociationRadar.cpp.s
+
 include/data_association.o: include/data_association.cpp.o
 
 .PHONY : include/data_association.o
@@ -321,6 +348,9 @@ help:
 	@echo "... rebuild_cache"
 	@echo "... radarTest"
 	@echo "... edit_cache"
+	@echo "... dataAssociation/dataAssociationRadar.o"
+	@echo "... dataAssociation/dataAssociationRadar.i"
+	@echo "... dataAssociation/dataAssociationRadar.s"
 	@echo "... include/data_association.o"
 	@echo "... include/data_association.i"
 	@echo "... include/data_association.s"
