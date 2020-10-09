@@ -21,6 +21,7 @@ using namespace cv::xfeatures2d;
 #include "../include/smicp_solver.h"
 
 #include "preProcessRadarScan.h"
+#include "dataAssociationRadar.h"
 
 
 #define refinement
@@ -147,12 +148,15 @@ int main(int argc, char *argv[]){
     // indici = getIndicesOfElementsInDescendingOrder(prewitt);
 
 
-    int lmax = 600;
+    int lmax = 399;
     // key1 = keyPointExtraction(bikeStrike, lmax);
     // key2 = keyPointExtraction(bikeORIGINAL, lmax);
 
     key1 = keyPointExtraction(radarScanImage, lmax);
-    key2 = keyPointExtraction(radarScanImageSucc, lmax);
+    // key2 = keyPointExtraction(radarScanImageSucc, lmax);
+    createDescriptor(key1);
+    std::cerr << "porco cazzo" << '\n';
+    // std::cout << "size landmark matrix"<< key1.size() << '\n';
     // key3 = keyPointExtraction(radarScanImageSucc2, lmax);
 
     // keyPointExtraction(radarScanImageSucc, lmax);
@@ -244,10 +248,10 @@ int main(int argc, char *argv[]){
     cv::imshow(landmarkprint1, key1); //show image.
     cv::waitKey();
 
-    std::string landmarkprint2 = "landmark scan2  ";
-    cv::namedWindow(landmarkprint2, cv::WINDOW_AUTOSIZE);
-    cv::imshow(landmarkprint2, key2); //show image.
-    cv::waitKey();
+    // std::string landmarkprint2 = "landmark scan2  ";
+    // cv::namedWindow(landmarkprint2, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(landmarkprint2, key2); //show image.
+    // cv::waitKey();
 
     // std::string landmarkprint3 = "landmark scan3  ";
     // cv::namedWindow(landmarkprint3, cv::WINDOW_AUTOSIZE);

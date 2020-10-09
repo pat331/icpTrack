@@ -205,7 +205,7 @@ Mat keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
   //     }
   //   } while(/* condition */);
   // }
-  return cartKeyPoint;
+  return keyPoint;
 }
 ////////////////////////////////////////////////////////////////////////////////
 Mat prewittOperator(Mat radarScanImage){

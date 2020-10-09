@@ -18,12 +18,17 @@ namespace pr {
   #define OPENCV_KEY_DELETE 3014656
   #define OPENCV_KEY_ESCAPE 27
 
+  typedef Eigen::Matrix<float, 1,400+3500> VectorDescriptor; // Dimension descriptor = number of angle + number of range in Radar scan
+
+  typedef std::vector<VectorDescriptor, Eigen::aligned_allocator<VectorDescriptor> > VectorOfDescriptorVector;
+
   typedef std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> > Vector4fVector;
   typedef std::vector<Eigen::Vector3f, Eigen::aligned_allocator<Eigen::Vector3f> > Vector3fVector;
   typedef std::vector<Eigen::Vector2f, Eigen::aligned_allocator<Eigen::Vector2f> > Vector2fVector;
   typedef std::vector<Eigen::Vector2i, Eigen::aligned_allocator<Eigen::Vector2i> > Vector2iVector;
   typedef std::vector<Eigen::Matrix3f, Eigen::aligned_allocator<Eigen::Matrix3f> > Matrix3fVector;
   typedef std::vector<Eigen::Matrix2f, Eigen::aligned_allocator<Eigen::Matrix2f> > Matrix2fVector;
+
 
 
   typedef Eigen::Matrix<float, 2, 3> Matrix2_3f;
@@ -40,6 +45,7 @@ namespace pr {
 
   typedef Eigen::Matrix<float, 6, 3> Matrix6_3f;
   typedef Eigen::Matrix<float, 4, 3> Matrix4_3f;
+
 
 
 
