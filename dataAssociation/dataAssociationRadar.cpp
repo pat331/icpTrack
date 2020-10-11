@@ -26,23 +26,51 @@ void createDescriptor(Mat L){
   Vector2fVector landmarksPositionPolar;
   Vector2fVector landmarksPositionCart;
   Vector2fVector landmarksPositionPolarInFrameLandmark;
+
+  VectorDescriptor descriptorCurrentLandmark;
+  VectorOfDescriptorVector desciptorLandmarkInRadarScan;
   int positionHelper;
 
   std::vector<float> angularHistogram(400,0);
-  std::vector<float> annulusHistogram(7000,0);
+  std::vector<float> annulusHistogram(3500,0);
+
+  int normAngle = 0;
+  int normAnnulus = 0;
 
   landmarksPositionPolar = getLandMarkPolarCoord(L);
-  std::cerr << "landmarksPositionPolar"<< landmarksPositionPolar.size() << '\n';
+
   for (int i = 0; i < landmarksPositionPolar.size(); i++) {
     landmarksPositionPolarInFrameLandmark = getLandMarkPolarCoordInLandMarkFrame(landmarksPositionPolar, i);
     std::fill(angularHistogram.begin(), angularHistogram.end(), 0);
     std::fill(annulusHistogram.begin(), annulusHistogram.end(), 0);
 
-    for (int k = 0; k < landmarksPositionPolarInFrameLandmark.size()-1; k++) {
+    for (int k = 0; k < landmarksPositionPolarInFrameLandmark.size(); k++) {
 
-      angularHistogram[(int)landmarksPositionPolarInFrameLandmark[k](1)]=+1;
-      annulusHistogram[(int)landmarksPositionPolarInFrameLandmark[k](0)]=+1;
+      angularHistogram[(int)landmarksPositionPolarInFrameLandmark[k](1)]++;
+      annulusHistogram[(int)(landmarksPositionPolarInFrameLandmark[k](0)/2)]++;
+
     }
+    // find the max number of element in one slice
+    for (size_t k = 0; k < angularHistogram.size(); k++) {
+      if (angularHistogram[k]>normAngle) {
+        normAngle = angularHistogram[k];
+      }
+    }
+    // fill the angular part of the descriptor
+    for (size_t k = 0; k < angularHistogram.size(); k++) {
+      descriptorCurrentLandmark[k] = angularHistogram[k]/normAngle;
+    }
+    // find the maximum number of element in one annulus
+    for (size_t j = 0; j < annulusHistogram.size(); j++) {
+      if (annulusHistogram[j]>normAnnulus) {
+        normAnnulus = annulusHistogram[j];
+      }
+    }
+    // fill the annulus part of the descriptor
+    for (size_t j = 0; j < annulusHistogram.size(); j++) {
+      descriptorCurrentLandmark[j+400] = annulusHistogram[j]/normAnnulus;
+    }
+    desciptorLandmarkInRadarScan.push_back(descriptorCurrentLandmark);
 
   }
 

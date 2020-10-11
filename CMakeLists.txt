@@ -36,6 +36,10 @@ file(GLOB SOURCES "src/*.cpp")
 include_directories(include)
 include_directories(keyPointExtraction)
 include_directories(dataAssociation)
+include_directories(fft-real/src)
+
+
+
 
 add_executable(radarTest ${SOURCES}
 
@@ -43,9 +47,11 @@ add_executable(radarTest ${SOURCES}
         ../include/data_association.cpp
         ../include/smicp_solver.cpp
         ../keyPointExtraction/preProcessRadarScan.cpp
-        ./dataAssociation/dataAssociationRadar.cpp
+        ../dataAssociation/dataAssociationRadar.cpp
+
 
 )
 #include_directories(include)
+
 
 target_link_libraries( radarTest ${OpenCV_LIBS} )

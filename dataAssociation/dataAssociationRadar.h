@@ -9,6 +9,15 @@
 
 #include "defs.h"
 
+#include "Array.h"
+#include "Array.hpp"
+#include "def.h"
+#include "DynArray.h"
+#include "DynArray.hpp"
+#include "FFTReal.h"
+#include "OscSinCos.h"
+#include "OscSinCos.hpp"
+
 #define angleResolution  0.0157079;
 using namespace cv;
 using namespace std;

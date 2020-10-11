@@ -22,6 +22,7 @@ set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "../include"
   "../keyPointExtraction"
   "../dataAssociation"
+  "../fft-real/src"
   )
 
 # Targets to which this target links.
