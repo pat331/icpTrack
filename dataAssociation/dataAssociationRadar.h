@@ -24,9 +24,10 @@ using namespace std;
 using namespace pr;
 
 // nota bene: questa funzione in realta' deve ritornare un Vector2fVector
-void unaryMatchesFromDescriptors(Mat L1, Mat L2);
 
-/*VectorOfDescriptorVector*/
-void createDescriptor(Mat L);
+void createPairwiseCompatibilities(VectorOfDescriptorVector descriptor1, VectorOfDescriptorVector descriptor2);
+Eigen::Matrix<float, 3, Eigen::Dynamic> matchProposal(VectorOfDescriptorVector descriptorScan1, VectorOfDescriptorVector descriptorScan2);
+
+VectorOfDescriptorVector createDescriptor(Mat L);
 Vector2fVector getLandMarkPolarCoord(Mat L);
 Vector2fVector getLandMarkPolarCoordInLandMarkFrame(Vector2fVector positionLsandMark, int landmark);

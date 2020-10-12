@@ -168,43 +168,6 @@ Mat keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
 
   warpPolar(keyPoint, cartKeyPoint, Size(1000,1000) , center, maxRadius,  flags);
 
-  // std::string superlandmark = "LANDMARK FUCK YEAH  ";
-  // cv::namedWindow(superlandmark, cv::WINDOW_AUTOSIZE);
-  // cv::imshow(superlandmark, cartKeyPoint); //show image.
-  // cv::waitKey();
-
-  // std::string land = "LANDMARK ";
-  // cv::namedWindow(land, cv::WINDOW_AUTOSIZE);
-  // cv::imshow(land, keyPoint); //show image.
-  // cv::waitKey();
-  // for (size_t q = 0; q < markedRegion.size(); q++) {
-  //       float angle = markedRegion[q](0);
-  //       for (size_t qIter = 0; qIter < markedRegion.size(); qIter++) {
-  //         if(angle - markedRegion[qIter](0) >=2 || markedRegion[qIter](0) - angle >=2 || markedRegion[qIter](0) - angle == 0 ){
-  //           // Taking into consideration only adjacent angle --> angle-1 && angle+1
-  //           continue;
-  //         }
-  //         if (angle - markedRegion[qIter](0) == 1 || markedRegion[qIter](0) - angle == 1) {
-  //             // check if the region is not isolated
-  //             low = markedRegion[qIter](1);
-  //             upper = markedRegion[qIter](2);
-  //         }
-  //
-  //
-  //       }
-  // }
-
-
-  // int iterOnMarkedRegion;
-  //
-  // for (int angle=0; angle<cols; angle ++) {
-  //   iterOnMarkedRegion=0;
-  //   do {
-  //     if(markedRegion[iterOnMarkedRegion](0) == angle){
-  //
-  //     }
-  //   } while(/* condition */);
-  // }
   return keyPoint;
 }
 ////////////////////////////////////////////////////////////////////////////////

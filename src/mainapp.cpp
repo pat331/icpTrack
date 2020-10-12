@@ -154,8 +154,21 @@ int main(int argc, char *argv[]){
 
     key1 = keyPointExtraction(radarScanImage, lmax);
     // key2 = keyPointExtraction(radarScanImageSucc, lmax);
-    createDescriptor(key1);
-    std::cerr << "porco cazzo" << '\n';
+    VectorOfDescriptorVector provaDescrittore, provaDescrittore2;
+
+    provaDescrittore = createDescriptor(key1);
+    Eigen::Matrix<float, 3, Eigen::Dynamic> provaMatchProposal;
+    provaMatchProposal = matchProposal(provaDescrittore,provaDescrittore);
+    // provaDescrittore2 =createDescriptor(key2);
+
+    // for (size_t i = 0; i < 3500+400; i++) {
+    //   std::cerr << "descrittore "<< provaDescrittore[3](i) << '\n';
+    //   if (i == 400) {
+    //     std::cerr << "angular descriptor finished" << '\n';
+    //   }
+    // }
+    std::cerr << "descrittore dimensione  "<< provaDescrittore.size() << '\n';
+    // std::cerr << "descrittore dimensione  2 "<< provaDescrittore2.size() << '\n';
     // std::cout << "size landmark matrix"<< key1.size() << '\n';
     // key3 = keyPointExtraction(radarScanImageSucc2, lmax);
 

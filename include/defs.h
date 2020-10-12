@@ -3,6 +3,7 @@
 #include <Eigen/Geometry>
 #include <Eigen/Cholesky>
 #include <Eigen/StdVector>
+// #include <Eigen/Dynamic>
 #include <iostream>
 #include <unistd.h>
 #include "opencv2/opencv.hpp"
@@ -18,7 +19,7 @@ namespace pr {
   #define OPENCV_KEY_DELETE 3014656
   #define OPENCV_KEY_ESCAPE 27
 
-  typedef Eigen::Matrix<float, 1,400+3500> VectorDescriptor; // Dimension descriptor = number of angle + number of range in Radar scan
+  typedef Eigen::Matrix<float, 1,2+400+3500> VectorDescriptor; // Dimension descriptor = position of the landmark + number of angle + number of range in Radar scan
 
   typedef std::vector<VectorDescriptor, Eigen::aligned_allocator<VectorDescriptor> > VectorOfDescriptorVector;
 
