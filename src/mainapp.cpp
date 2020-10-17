@@ -157,10 +157,20 @@ int main(int argc, char *argv[]){
     VectorOfDescriptorVector provaDescrittore, provaDescrittore2;
 
     provaDescrittore = createDescriptor(key1);
+    // provaDescrittore2 = createDescriptor(key2);
     Eigen::Matrix<float, 3, Eigen::Dynamic> provaMatchProposal;
     provaMatchProposal = matchProposal(provaDescrittore,provaDescrittore);
-    // provaDescrittore2 =createDescriptor(key2);
+    for (size_t i = 0; i < 284; i++) {
+      std::cerr << "proposal "<< provaMatchProposal(1,i) << '\n';
+    }
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairWiseMatrix;
+    // int numberOfLandmarks = provaDescrittore.size();
+    // pairWiseMatrix.resize(numberOfLandmarks, numberOfLandmarks);
 
+    pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore, provaMatchProposal);
+    // createPairwiseCompatibilities(provaDescrittore,provaDescrittore2, provaMatchProposal);
+    // provaDescrittore2 =createDescriptor(key2)
+    greedyAlgorithm(pairWiseMatrix, provaMatchProposal);
     // for (size_t i = 0; i < 3500+400; i++) {
     //   std::cerr << "descrittore "<< provaDescrittore[3](i) << '\n';
     //   if (i == 400) {

@@ -17,8 +17,142 @@ using namespace cv;
 using namespace pr;
 
 
-void createPairwiseCompatibilities(VectorOfDescriptorVector descriptor1, VectorOfDescriptorVector descriptor2){
+void greedyAlgorithm(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairwiseCompatibilities, Eigen::Matrix<float, 3, Eigen::Dynamic> matchProposal){
 
+  int numberOfAssociation = pairwiseCompatibilities.cols();
+  Eigen::EigenSolver<Eigen::MatrixXf> es;
+  // Eigen::MatrixXf A = MatrixXf::Random(4,4);
+  es.compute(pairwiseCompatibilities, /* computeEigenvectors = */ true);
+
+  cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << endl;
+  cout << "The eigenVectors of A are: " << es.eigenvectors().transpose() << endl;
+  std::cerr << "the first value of the first eigenvector are "<< es.eigenvectors().col(0)[0].real() << '\n';
+  std::cerr << "singolo autovalore "<< es.eigenvalues()[0] << '\n';
+
+  float maxEigenvalue;
+  int indexOfPrincipalVector;
+  std::vector<int> unsearched (pairwiseCompatibilities.cols(),0);
+  std::vector<int> m (pairwiseCompatibilities.cols(),0);
+  // std::vector<int> solution (pairwiseCompatibilities.cols(),0);
+  Eigen::Matrix<float, 1, Eigen::Dynamic> solution;
+  solution.resize(pairwiseCompatibilities.cols());
+  solution.setZero();
+
+  int score = 0;
+
+  // Search for the principal eigenvector
+  for (int i = 0; i < pairwiseCompatibilities.cols(); i++) {
+    if (i == 0) {
+      maxEigenvalue = es.eigenvalues()[i].real();
+      indexOfPrincipalVector = i;
+      continue;
+    }
+    if (maxEigenvalue < es.eigenvalues()[i].real()) {
+      maxEigenvalue = es.eigenvalues()[i].real();
+      indexOfPrincipalVector = i;
+    }
+    // The principal eigenVector is the es.eigenvectors().col(indexOfPrincipalVector)
+  }
+  float m_g;
+  int indexM;
+  int numberUnsearched = 0;
+  float checkScore;
+
+  do {
+    for (int j = 0; j < pairwiseCompatibilities.cols(); j++) {
+      if (m[j]>0 || unsearched[j] >0) {
+        continue;
+      }
+      if (j==0) {
+        m_g = es.eigenvectors().col(indexOfPrincipalVector)[j].real();
+        indexM = j;
+        continue;
+      }
+      if (pow(m_g,2) < pow(es.eigenvectors().col(indexOfPrincipalVector)[j].real(),2)) {
+        m_g = es.eigenvectors().col(indexOfPrincipalVector)[j].real();
+        indexM = j;
+      }
+    }
+    m[indexM]=1;
+    unsearched[indexM]=1;
+    solution(indexM)=1;
+    numberUnsearched++;
+    // check termination
+    checkScore = (solution.transpose()*pairwiseCompatibilities*solution)(0);
+    if (checkScore< score) {
+      break;
+    }
+    // adesso bisogna controllare quale associazione abbiamo preso
+    // i = indexM, j = ? (valore da cercare in matchProposal)
+    int associationToEliminate = matchProposal(1,indexM);
+    for (int k = 0; k < pairwiseCompatibilities.cols(); k++) {
+      if (k == indexM) {
+        continue;
+      }
+      if (matchProposal(1,k) == associationToEliminate) {
+        unsearched[k]=1;
+      numberUnsearched++;
+      }
+    }
+  } while(numberUnsearched >= unsearched.size());
+  std::cerr << "solution vector optimization " << solution << '\n';
+}
+////////////////////////////////////////////////////////////////////////////////
+Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> createPairwiseCompatibilities(VectorOfDescriptorVector descriptor1, VectorOfDescriptorVector descriptor2, Eigen::Matrix<float, 3, Eigen::Dynamic> unaryMatch){
+    //  Number of possible pairs in n landMark n(n-1)/2
+    // Prendere tutte le coppie di indici possibili
+    // int numberOfLandmarks = descriptor1.size();
+    int numberOfLandmarks = 15;
+    // Inizializzo la matrice del compatibility score
+    Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairwiseCompatibilities;
+    pairwiseCompatibilities.resize(numberOfLandmarks, numberOfLandmarks);
+
+    Eigen::Vector2i indexAssociatedLandMarki;
+    Eigen::Vector2i indexAssociatedLandMarkj;
+    float distanceInScan1, distanceInScan2;
+
+    for (int i = 0; i < numberOfLandmarks; i++) { // landmark scan2 trasformati
+      indexAssociatedLandMarki(0) = (int)unaryMatch(1,i); // landmark index in scan2 associated to  landmark i
+      indexAssociatedLandMarki(1) = (int)unaryMatch(1,i); // in the unaryMatch vector the information about the associated landmark is in the second component
+
+      for (int j = i; j < numberOfLandmarks; j++) {
+        indexAssociatedLandMarkj(0) = (int)unaryMatch(1,j); // landmark index in scan2 associated to  landmark j
+        indexAssociatedLandMarkj(1) = (int)unaryMatch(1,j);
+
+        distanceInScan1 = sqrt(pow(descriptor1[i](0)-descriptor1[j](0),2)
+                              +pow(descriptor1[i](1)-descriptor1[j](1),2));
+        distanceInScan2 = sqrt(pow(descriptor2[indexAssociatedLandMarki(0)](0)-descriptor2[indexAssociatedLandMarkj(0)](0),2)
+                              +pow(descriptor2[indexAssociatedLandMarki(1)](1)-descriptor2[indexAssociatedLandMarkj(1)](1),2));
+
+        pairwiseCompatibilities(i,j)= 1/(1+abs(distanceInScan1-distanceInScan2));
+        pairwiseCompatibilities(j,i)= pairwiseCompatibilities(i,j);
+      }
+    }
+    // Eigen::EigenSolver<Eigen::MatrixXf> es;
+    //
+    // es.compute(pairwiseCompatibilities, /* computeEigenvectors = */ true);
+    // cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << endl;
+    // cout << "The eigenvectors of A are: " << es.eigenvectors().transpose() << endl;
+    // std::cerr << "prova eigen "<< es.eigenvalues().at(1) << '\n';
+    return pairwiseCompatibilities;
+}
+
+Vector2fVector getPairInScan(int numberOfLandmarks){
+
+  Vector2fVector vectorPair;
+  Eigen::Vector2f pair;
+  for (int i = 0; i < numberOfLandmarks-1; i++) {
+    int scarto = i+1;
+    std::cerr << "scarto "<< scarto << '\n';
+    for (int j = scarto; j < numberOfLandmarks; j++) {
+      pair(0)=i;
+      pair(1)=j;
+      vectorPair.push_back(pair);
+    }
+  }
+  std::cerr << "prova errore su indici 1 inside "<< vectorPair[0](0) << '\n';
+  std::cerr << "prova errore su indici 2 inside "<< vectorPair[0](1) << '\n';
+  return vectorPair;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -28,18 +162,18 @@ Eigen::Matrix<float, 3, Eigen::Dynamic> matchProposal(VectorOfDescriptorVector d
   float bestDescriptorDistance;
   int indexAssociatedLandMark;
 
-  const int dimDescriptorScan2 = (int)descriptorScan2.size();
-  Eigen::Matrix<float, 3, Eigen::Dynamic> landMarkInScan2AlreadyAssociated;
-  landMarkInScan2AlreadyAssociated.resize(3,dimDescriptorScan2);
-  landMarkInScan2AlreadyAssociated.setZero();
+  const int dimDescriptorScan1 = (int)descriptorScan1.size();
+  Eigen::Matrix<float, 3, Eigen::Dynamic> landMarkInScanAlreadyAssociated;
+  landMarkInScanAlreadyAssociated.resize(3,dimDescriptorScan1);
+  landMarkInScanAlreadyAssociated.setZero();
 
-  for (size_t i = 0; i < descriptorScan2.size(); i++) {
+  for (size_t i = 0; i < descriptorScan1.size(); i++) {
     bestDescriptorDistance = 99999; // fisso  ad un valore alto per comodita'. Verra' immediatamente cambiato nella prima iterazione su j
-    for (size_t j = 0; j < descriptorScan1.size(); j++) {
+    for (size_t j = 0; j < descriptorScan2.size(); j++) {
       descriptorDistance = 0;
       for (int k = 0; k < 400+3500; k++) { // Ricorda sempre che le prime due posizioni del descriptor sono occupate dalla posizione del landmark
         // descriptorDistance += abs( descriptorScan1[i](k+2) - descriptorScan2[j](k+2) );
-        descriptorDistance += abs( descriptorScan2[i](k+2) - descriptorScan1[j](k+2) );
+        descriptorDistance += abs( descriptorScan1[i](k+2) - descriptorScan2[j](k+2) );
       }
       if (j==0 && i==0) {
         bestDescriptorDistance = descriptorDistance;
@@ -47,24 +181,55 @@ Eigen::Matrix<float, 3, Eigen::Dynamic> matchProposal(VectorOfDescriptorVector d
       }
       if (descriptorDistance < bestDescriptorDistance) {
         bestDescriptorDistance = descriptorDistance;
-        indexAssociatedLandMark = j; // Numero del landmark nello scan1 che stiamo associando al landmark i nello scan2
+        indexAssociatedLandMark = j; // Numero del landmark nello scan2 che stiamo associando al landmark i nello scan1
       }
     }
-    // Landmark non ancora associato do -->
-    if (landMarkInScan2AlreadyAssociated(0,indexAssociatedLandMark) == 0) {
-        landMarkInScan2AlreadyAssociated(0,indexAssociatedLandMark) = 1; // Indicazione che il landmark e' stato associato
-        landMarkInScan2AlreadyAssociated(1,indexAssociatedLandMark) = i;  // Indicazione su quale landmark dello scan2 lo associamo
-        landMarkInScan2AlreadyAssociated(2,indexAssociatedLandMark) = bestDescriptorDistance; // Indicazione sulla distanza fra i due landmark
-    } else if(landMarkInScan2AlreadyAssociated(0,indexAssociatedLandMark) == 1){ // Il landmark j ha gia' una associazione
-      // Controllo se questa associazione e' migliore
-      if (bestDescriptorDistance < landMarkInScan2AlreadyAssociated(2,indexAssociatedLandMark)) {
-        landMarkInScan2AlreadyAssociated(1,indexAssociatedLandMark) = i;  // Riassegno il landmark associato i
-        landMarkInScan2AlreadyAssociated(2,indexAssociatedLandMark) = bestDescriptorDistance; // Riassegno la distanza fra i due landmark associati
-      }
-    }
-  }
 
-  return landMarkInScan2AlreadyAssociated;
+    landMarkInScanAlreadyAssociated(0,i) = 1; // Indicazione che il landmark e' stato associato
+    landMarkInScanAlreadyAssociated(1,i) = indexAssociatedLandMark;  // Indicazione su quale landmark dello scan2 lo associamo
+    landMarkInScanAlreadyAssociated(2,i) = bestDescriptorDistance; // Indicazione sulla distanza fra i due landmark
+
+  }
+  //////////////////////////////////////////////////////////////////////////////
+  // for (size_t i = 0; i < descriptorScan2.size(); i++) {
+  //   bestDescriptorDistance = 99999; // fisso  ad un valore alto per comodita'. Verra' immediatamente cambiato nella prima iterazione su j
+  //   for (size_t j = 0; j < descriptorScan1.size(); j++) {
+  //     descriptorDistance = 0;
+  //     for (int k = 0; k < 400+3500; k++) { // Ricorda sempre che le prime due posizioni del descriptor sono occupate dalla posizione del landmark
+  //       // descriptorDistance += abs( descriptorScan1[i](k+2) - descriptorScan2[j](k+2) );
+  //       descriptorDistance += abs( descriptorScan2[i](k+2) - descriptorScan1[j](k+2) );
+  //     }
+  //     if (j==0 && i==0) {
+  //       bestDescriptorDistance = descriptorDistance;
+  //       indexAssociatedLandMark = 0;
+  //     }
+  //     if (descriptorDistance < bestDescriptorDistance) {
+  //       bestDescriptorDistance = descriptorDistance;
+  //       indexAssociatedLandMark = j; // Numero del landmark nello scan1 che stiamo associando al landmark i nello scan2
+  //     }
+  //   }
+  //   // Landmark non ancora associato do -->
+  //   if (landMarkInScanAlreadyAssociated(0,indexAssociatedLandMark) == 0) {
+  //       landMarkInScanAlreadyAssociated(0,indexAssociatedLandMark) = 1; // Indicazione che il landmark e' stato associato
+  //       landMarkInScanAlreadyAssociated(1,indexAssociatedLandMark) = i;  // Indicazione su quale landmark dello scan2 lo associamo
+  //       landMarkInScanAlreadyAssociated(2,indexAssociatedLandMark) = bestDescriptorDistance; // Indicazione sulla distanza fra i due landmark
+  //   } else if(landMarkInScanAlreadyAssociated(0,indexAssociatedLandMark) == 1){ // Il landmark j ha gia' una associazione
+  //     // Controllo se questa associazione e' migliore
+  //     if (bestDescriptorDistance < landMarkInScanAlreadyAssociated(2,indexAssociatedLandMark)) {
+  //       landMarkInScanAlreadyAssociated(1,indexAssociatedLandMark) = i;  // Riassegno il landmark associato i
+  //       landMarkInScanAlreadyAssociated(2,indexAssociatedLandMark) = bestDescriptorDistance; // Riassegno la distanza fra i due landmark associati
+  //     }
+  //   }
+  //
+  //
+  // }
+  //////////////////////////////////////////////////////////////////////////////
+  // Eigen::Matrix<float, 1, Eigen::Dynamic> associationVector;
+  // associationVector.resize(1,dimDescriptorScan1);
+  // associationVector = landMarkInScanAlreadyAssociated.col(1);
+  //
+  // return associationVector;
+  return landMarkInScanAlreadyAssociated;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
