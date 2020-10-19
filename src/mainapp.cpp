@@ -153,13 +153,14 @@ int main(int argc, char *argv[]){
     // key2 = keyPointExtraction(bikeORIGINAL, lmax);
 
     key1 = keyPointExtraction(radarScanImage, lmax);
-    // key2 = keyPointExtraction(radarScanImageSucc, lmax);
+    key2 = keyPointExtraction(radarScanImageSucc, lmax);
     VectorOfDescriptorVector provaDescrittore, provaDescrittore2;
 
     provaDescrittore = createDescriptor(key1);
-    // provaDescrittore2 = createDescriptor(key2);
+    provaDescrittore2 = createDescriptor(key2);
     Eigen::Matrix<float, 3, Eigen::Dynamic> provaMatchProposal;
-    provaMatchProposal = matchProposal(provaDescrittore,provaDescrittore);
+    // provaMatchProposal = matchProposal(provaDescrittore,provaDescrittore);
+    provaMatchProposal = matchProposal(provaDescrittore,provaDescrittore2);
     for (size_t i = 0; i < 284; i++) {
       std::cerr << "proposal "<< provaMatchProposal(1,i) << '\n';
     }
@@ -167,7 +168,8 @@ int main(int argc, char *argv[]){
     // int numberOfLandmarks = provaDescrittore.size();
     // pairWiseMatrix.resize(numberOfLandmarks, numberOfLandmarks);
 
-    pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore, provaMatchProposal);
+    // pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore, provaMatchProposal);
+    pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore2, provaMatchProposal);
     // createPairwiseCompatibilities(provaDescrittore,provaDescrittore2, provaMatchProposal);
     // provaDescrittore2 =createDescriptor(key2)
     greedyAlgorithm(pairWiseMatrix, provaMatchProposal);

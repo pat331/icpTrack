@@ -36,6 +36,7 @@ file(GLOB SOURCES "src/*.cpp")
 include_directories(include)
 include_directories(keyPointExtraction)
 include_directories(dataAssociation)
+include_directories(rigidBodyMotion)
 include_directories(fft-real/src)
 
 
@@ -48,6 +49,7 @@ add_executable(radarTest ${SOURCES}
         ../include/smicp_solver.cpp
         ../keyPointExtraction/preProcessRadarScan.cpp
         ../dataAssociation/dataAssociationRadar.cpp
+        ../rigidBodyMotion/singleValueDecomposition2D.cpp
 
 
 )

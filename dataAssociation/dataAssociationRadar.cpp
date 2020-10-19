@@ -47,6 +47,7 @@ void greedyAlgorithm(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairwi
       indexOfPrincipalVector = i;
       continue;
     }
+
     if (maxEigenvalue < es.eigenvalues()[i].real()) {
       maxEigenvalue = es.eigenvalues()[i].real();
       indexOfPrincipalVector = i;
@@ -58,17 +59,24 @@ void greedyAlgorithm(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairwi
   int numberUnsearched = 0;
   float checkScore;
 
+  std::cerr << "max" << maxEigenvalue <<  '\n';
+  std::cerr << "index max " << indexOfPrincipalVector << '\n';
   do {
+    m_g = 0; // possibile errore nel caso un autovettore fosse degenere
     for (int j = 0; j < pairwiseCompatibilities.cols(); j++) {
-      if (m[j]>0 || unsearched[j] >0) {
+      if (m[j]>0 || unsearched[j] > 0) {
+        std::cerr << "unserached and m exption if " << '\n';
         continue;
       }
-      if (j==0) {
+      if (j==0 && m[j]==0) {
         m_g = es.eigenvectors().col(indexOfPrincipalVector)[j].real();
         indexM = j;
         continue;
       }
-      if (pow(m_g,2) < pow(es.eigenvectors().col(indexOfPrincipalVector)[j].real(),2)) {
+      std::cerr << "m_g pow = "<< pow(m_g,2) << '\n';
+      std::cerr << "comparazione pow  "<< pow(es.eigenvectors().col(indexOfPrincipalVector)[j].real(),2)<< '\n';
+      if (pow(m_g,2) <= pow(es.eigenvectors().col(indexOfPrincipalVector)[j].real(),2)) {
+        std::cerr << "entrato " << '\n';
         m_g = es.eigenvectors().col(indexOfPrincipalVector)[j].real();
         indexM = j;
       }
@@ -78,23 +86,27 @@ void greedyAlgorithm(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairwi
     solution(indexM)=1;
     numberUnsearched++;
     // check termination
-    checkScore = (solution.transpose()*pairwiseCompatibilities*solution)(0);
-    if (checkScore< score) {
-      break;
-    }
+    // checkScore = (solution.transpose()*pairwiseCompatibilities*solution)(0);
+    // if (checkScore< score) {
+    //   break;
+    // }
     // adesso bisogna controllare quale associazione abbiamo preso
     // i = indexM, j = ? (valore da cercare in matchProposal)
     int associationToEliminate = matchProposal(1,indexM);
+    std::cerr << "numberUnsearched "<< numberUnsearched << '\n';
     for (int k = 0; k < pairwiseCompatibilities.cols(); k++) {
       if (k == indexM) {
         continue;
       }
+      std::cerr << "mathc proposal "<< matchProposal(1,k) << '\n';
+      std::cerr << "associationToEliminate "<<associationToEliminate << '\n';
       if (matchProposal(1,k) == associationToEliminate) {
+        std::cerr << "entro cazo" << '\n';
         unsearched[k]=1;
-      numberUnsearched++;
+        numberUnsearched++;
       }
     }
-  } while(numberUnsearched >= unsearched.size());
+  } while(numberUnsearched <= unsearched.size());
   std::cerr << "solution vector optimization " << solution << '\n';
 }
 ////////////////////////////////////////////////////////////////////////////////

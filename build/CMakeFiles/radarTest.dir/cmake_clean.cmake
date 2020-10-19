@@ -7,6 +7,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/radarTest.dir/include/smicp_solver.cpp.o"
   "CMakeFiles/radarTest.dir/keyPointExtraction/preProcessRadarScan.cpp.o"
   "CMakeFiles/radarTest.dir/dataAssociation/dataAssociationRadar.cpp.o"
+  "CMakeFiles/radarTest.dir/rigidBodyMotion/singleValueDecomposition2D.cpp.o"
   "radarTest.pdb"
   "radarTest"
 )

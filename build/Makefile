@@ -258,6 +258,33 @@ keyPointExtraction/preProcessRadarScan.cpp.s:
 	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/keyPointExtraction/preProcessRadarScan.cpp.s
 .PHONY : keyPointExtraction/preProcessRadarScan.cpp.s
 
+rigidBodyMotion/singleValueDecomposition2D.o: rigidBodyMotion/singleValueDecomposition2D.cpp.o
+
+.PHONY : rigidBodyMotion/singleValueDecomposition2D.o
+
+# target to build an object file
+rigidBodyMotion/singleValueDecomposition2D.cpp.o:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/rigidBodyMotion/singleValueDecomposition2D.cpp.o
+.PHONY : rigidBodyMotion/singleValueDecomposition2D.cpp.o
+
+rigidBodyMotion/singleValueDecomposition2D.i: rigidBodyMotion/singleValueDecomposition2D.cpp.i
+
+.PHONY : rigidBodyMotion/singleValueDecomposition2D.i
+
+# target to preprocess a source file
+rigidBodyMotion/singleValueDecomposition2D.cpp.i:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/rigidBodyMotion/singleValueDecomposition2D.cpp.i
+.PHONY : rigidBodyMotion/singleValueDecomposition2D.cpp.i
+
+rigidBodyMotion/singleValueDecomposition2D.s: rigidBodyMotion/singleValueDecomposition2D.cpp.s
+
+.PHONY : rigidBodyMotion/singleValueDecomposition2D.s
+
+# target to generate assembly for a file
+rigidBodyMotion/singleValueDecomposition2D.cpp.s:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/rigidBodyMotion/singleValueDecomposition2D.cpp.s
+.PHONY : rigidBodyMotion/singleValueDecomposition2D.cpp.s
+
 src/elaborationRadar.o: src/elaborationRadar.cpp.o
 
 .PHONY : src/elaborationRadar.o
@@ -363,6 +390,9 @@ help:
 	@echo "... keyPointExtraction/preProcessRadarScan.o"
 	@echo "... keyPointExtraction/preProcessRadarScan.i"
 	@echo "... keyPointExtraction/preProcessRadarScan.s"
+	@echo "... rigidBodyMotion/singleValueDecomposition2D.o"
+	@echo "... rigidBodyMotion/singleValueDecomposition2D.i"
+	@echo "... rigidBodyMotion/singleValueDecomposition2D.s"
 	@echo "... src/elaborationRadar.o"
 	@echo "... src/elaborationRadar.i"
 	@echo "... src/elaborationRadar.s"
