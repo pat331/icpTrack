@@ -50,6 +50,7 @@ add_executable(radarTest ${SOURCES}
         ../keyPointExtraction/preProcessRadarScan.cpp
         ../dataAssociation/dataAssociationRadar.cpp
         ../rigidBodyMotion/singleValueDecomposition2D.cpp
+        ../rigidBodyMotion/rigidBodyMotion.cpp
 
 
 )

@@ -258,6 +258,33 @@ keyPointExtraction/preProcessRadarScan.cpp.s:
 	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/keyPointExtraction/preProcessRadarScan.cpp.s
 .PHONY : keyPointExtraction/preProcessRadarScan.cpp.s
 
+rigidBodyMotion/rigidBodyMotion.o: rigidBodyMotion/rigidBodyMotion.cpp.o
+
+.PHONY : rigidBodyMotion/rigidBodyMotion.o
+
+# target to build an object file
+rigidBodyMotion/rigidBodyMotion.cpp.o:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/rigidBodyMotion/rigidBodyMotion.cpp.o
+.PHONY : rigidBodyMotion/rigidBodyMotion.cpp.o
+
+rigidBodyMotion/rigidBodyMotion.i: rigidBodyMotion/rigidBodyMotion.cpp.i
+
+.PHONY : rigidBodyMotion/rigidBodyMotion.i
+
+# target to preprocess a source file
+rigidBodyMotion/rigidBodyMotion.cpp.i:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/rigidBodyMotion/rigidBodyMotion.cpp.i
+.PHONY : rigidBodyMotion/rigidBodyMotion.cpp.i
+
+rigidBodyMotion/rigidBodyMotion.s: rigidBodyMotion/rigidBodyMotion.cpp.s
+
+.PHONY : rigidBodyMotion/rigidBodyMotion.s
+
+# target to generate assembly for a file
+rigidBodyMotion/rigidBodyMotion.cpp.s:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/rigidBodyMotion/rigidBodyMotion.cpp.s
+.PHONY : rigidBodyMotion/rigidBodyMotion.cpp.s
+
 rigidBodyMotion/singleValueDecomposition2D.o: rigidBodyMotion/singleValueDecomposition2D.cpp.o
 
 .PHONY : rigidBodyMotion/singleValueDecomposition2D.o
@@ -390,6 +417,9 @@ help:
 	@echo "... keyPointExtraction/preProcessRadarScan.o"
 	@echo "... keyPointExtraction/preProcessRadarScan.i"
 	@echo "... keyPointExtraction/preProcessRadarScan.s"
+	@echo "... rigidBodyMotion/rigidBodyMotion.o"
+	@echo "... rigidBodyMotion/rigidBodyMotion.i"
+	@echo "... rigidBodyMotion/rigidBodyMotion.s"
 	@echo "... rigidBodyMotion/singleValueDecomposition2D.o"
 	@echo "... rigidBodyMotion/singleValueDecomposition2D.i"
 	@echo "... rigidBodyMotion/singleValueDecomposition2D.s"

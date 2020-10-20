@@ -154,6 +154,7 @@ int main(int argc, char *argv[]){
 
     key1 = keyPointExtraction(radarScanImage, lmax);
     key2 = keyPointExtraction(radarScanImageSucc, lmax);
+    // RICORDA DI INSERIRE UN CHECK SU NUMERO DI LANMARK DEL PRIMO E SECONDO SCAN
     VectorOfDescriptorVector provaDescrittore, provaDescrittore2;
 
     provaDescrittore = createDescriptor(key1);
@@ -172,7 +173,8 @@ int main(int argc, char *argv[]){
     pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore2, provaMatchProposal);
     // createPairwiseCompatibilities(provaDescrittore,provaDescrittore2, provaMatchProposal);
     // provaDescrittore2 =createDescriptor(key2)
-    greedyAlgorithm(pairWiseMatrix, provaMatchProposal);
+    Eigen::Matrix<float, 1, Eigen::Dynamic> optimizedAssociationSolution;
+    optimizedAssociationSolution = greedyAlgorithm(pairWiseMatrix, provaMatchProposal);
     // for (size_t i = 0; i < 3500+400; i++) {
     //   std::cerr << "descrittore "<< provaDescrittore[3](i) << '\n';
     //   if (i == 400) {

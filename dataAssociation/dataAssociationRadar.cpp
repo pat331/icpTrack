@@ -17,7 +17,7 @@ using namespace cv;
 using namespace pr;
 
 
-void greedyAlgorithm(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairwiseCompatibilities, Eigen::Matrix<float, 3, Eigen::Dynamic> matchProposal){
+Eigen::Matrix<float, 1, Eigen::Dynamic> greedyAlgorithm(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairwiseCompatibilities, Eigen::Matrix<float, 3, Eigen::Dynamic> matchProposal){
 
   int numberOfAssociation = pairwiseCompatibilities.cols();
   Eigen::EigenSolver<Eigen::MatrixXf> es;
@@ -108,6 +108,8 @@ void greedyAlgorithm(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairwi
     }
   } while(numberUnsearched <= unsearched.size());
   std::cerr << "solution vector optimization " << solution << '\n';
+
+  return solution;
 }
 ////////////////////////////////////////////////////////////////////////////////
 Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> createPairwiseCompatibilities(VectorOfDescriptorVector descriptor1, VectorOfDescriptorVector descriptor2, Eigen::Matrix<float, 3, Eigen::Dynamic> unaryMatch){

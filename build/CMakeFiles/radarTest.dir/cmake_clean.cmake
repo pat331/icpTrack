@@ -8,6 +8,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/radarTest.dir/keyPointExtraction/preProcessRadarScan.cpp.o"
   "CMakeFiles/radarTest.dir/dataAssociation/dataAssociationRadar.cpp.o"
   "CMakeFiles/radarTest.dir/rigidBodyMotion/singleValueDecomposition2D.cpp.o"
+  "CMakeFiles/radarTest.dir/rigidBodyMotion/rigidBodyMotion.cpp.o"
   "radarTest.pdb"
   "radarTest"
 )
