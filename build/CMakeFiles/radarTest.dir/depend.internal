@@ -2685,6 +2685,8 @@ CMakeFiles/radarTest.dir/src/mainapp.cpp.o
  ../fft-real/src/OscSinCos.hpp
  ../fft-real/src/def.h
  ../keyPointExtraction/preProcessRadarScan.h
+ ../rigidBodyMotion/rigidBodyMotion.h
+ ../rigidBodyMotion/singleValueDecomposition2D.h
  /home/luca/Documents/tesi/icpTrack/include/data_association.h
  /home/luca/Documents/tesi/icpTrack/include/defs.h
  /home/luca/Documents/tesi/icpTrack/include/elaborationRadar.h

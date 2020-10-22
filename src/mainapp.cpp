@@ -22,6 +22,8 @@ using namespace cv::xfeatures2d;
 
 #include "preProcessRadarScan.h"
 #include "dataAssociationRadar.h"
+#include "rigidBodyMotion.h"
+#include "singleValueDecomposition2D.h"
 
 
 #define refinement
@@ -108,10 +110,10 @@ int main(int argc, char *argv[]){
     Mat_<float> prewitt;
     prewitt = prewittOperator(radarScanImage);
 
-    std::string scanPrewittPolar = "scanPrewittPolar ";
-    cv::namedWindow(scanPrewittPolar, cv::WINDOW_AUTOSIZE);
-    cv::imshow(scanPrewittPolar, prewitt); //show image.
-    cv::waitKey();
+    // std::string scanPrewittPolar = "scanPrewittPolar ";
+    // cv::namedWindow(scanPrewittPolar, cv::WINDOW_AUTOSIZE);
+    // cv::imshow(scanPrewittPolar, prewitt); //show image.
+    // cv::waitKey();
 
 
     // PRINT BICLICLETTE PREWITT ////////////////////////////////////////
@@ -155,7 +157,7 @@ int main(int argc, char *argv[]){
     key1 = keyPointExtraction(radarScanImage, lmax);
     key2 = keyPointExtraction(radarScanImageSucc, lmax);
     // RICORDA DI INSERIRE UN CHECK SU NUMERO DI LANMARK DEL PRIMO E SECONDO SCAN
-    VectorOfDescriptorVector provaDescrittore, provaDescrittore2;
+    VectorOfDescriptorVector provaDescrittore, provaDescrittore2, provaDescrittoreRelaxation;
 
     provaDescrittore = createDescriptor(key1);
     provaDescrittore2 = createDescriptor(key2);
@@ -171,6 +173,8 @@ int main(int argc, char *argv[]){
 
     // pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore, provaMatchProposal);
     pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore2, provaMatchProposal);
+
+    // pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore2, provaMatchProposal);
     // createPairwiseCompatibilities(provaDescrittore,provaDescrittore2, provaMatchProposal);
     // provaDescrittore2 =createDescriptor(key2)
     Eigen::Matrix<float, 1, Eigen::Dynamic> optimizedAssociationSolution;
@@ -181,7 +185,32 @@ int main(int argc, char *argv[]){
     //     std::cerr << "angular descriptor finished" << '\n';
     //   }
     // }
-    std::cerr << "descrittore dimensione  "<< provaDescrittore.size() << '\n';
+    // std::cerr << "descrittore dimensione  "<< provaDescrittore.size() << '\n';
+    ////////////////////////////////////////////////////////////////////////////
+    // Prova metodo callis con rotazione prestabilita ma non unitaria
+    // provaDescrittoreRelaxation = provaDescrittore;
+    // float x1,y1;
+    // float traslazione = 0;
+    // for (size_t i = 0; i < provaDescrittore.size(); i++) {
+    //   x1 = provaDescrittore[i](0)*(1/sqrt(2)) + provaDescrittore[i](1)*(-1/sqrt(2))+ traslazione;
+    //   y1 = provaDescrittore[i](0)*(1/sqrt(2)) + provaDescrittore[i](1)*(1/sqrt(2)) + traslazione;
+    //   provaDescrittoreRelaxation[i](0) = x1;
+    //   provaDescrittoreRelaxation[i](1) = y1;
+    // }
+    // Eigen::Matrix<float, 2,2> rotationMatrixRProva;
+    // rotationMatrixRProva = rigidBodyMotion(provaDescrittore, provaDescrittoreRelaxation, provaMatchProposal, optimizedAssociationSolution);
+    //  std::cerr << "rotationMatrixRprova "<< rotationMatrixRProva << '\n';
+    //  std::cerr << "inversa soluzione "<< rotationMatrixRProva.inverse() << '\n';
+    ////////////////////////////////////////////////////////////////////////////
+    std::cerr << "ROTAZIONE DUE" << '\n';
+    Eigen::Matrix<float, 2,2> rotationMatrixR;
+    rotationMatrixR = rigidBodyMotion(provaDescrittore, provaDescrittore2, provaMatchProposal, optimizedAssociationSolution);
+    std::cerr << "rotationMatrixR "<< rotationMatrixR << '\n';
+
+    Eigen::Vector2f meanScan1 = meanScan(provaDescrittore);
+    Eigen::Vector2f meanScan2 = meanScan(provaDescrittore2);
+    Eigen::Vector2f translationVector = meanScan2 - rotationMatrixR * meanScan1;
+    // std::cerr << "determinant "<< rotationMatrixR.determinant() << '\n';
     // std::cerr << "descrittore dimensione  2 "<< provaDescrittore2.size() << '\n';
     // std::cout << "size landmark matrix"<< key1.size() << '\n';
     // key3 = keyPointExtraction(radarScanImageSucc2, lmax);
@@ -309,7 +338,54 @@ int main(int argc, char *argv[]){
     // cv::namedWindow(landmarkprint2, cv::WINDOW_AUTOSIZE);
     // cv::imshow(landmarkprint2, key2); //show image.
     // cv::waitKey();
+
+    RGBImage local_image(img_width, img_height);
+    local_image.create(img_width, img_height);
+    local_image=cv::Vec3b(255,255,255);
+    // Global view
+    RGBImage map_image(img_width, img_height);
+    map_image.create(img_width, img_height);
+    map_image=cv::Vec3b(255,255,255);
+
+    RGBImage refined_map_image(img_width, img_height);
+    refined_map_image.create(img_width, img_height);
+    refined_map_image=cv::Vec3b(255,255,255);
+
+    // Show 2 scans
+    // Scale and translate scans for better display
+    Vector2fVector scan_for_disp;
+    int numberOfLandmarks = provaDescrittore.size(); // numero di landmark nel radarscan "iter"
+    std::cout << "landmarks nello scan di partenza "<< numberOfLandmarks  << std::endl;
+    for (int i=0; i<numberOfLandmarks; i++){
+      Eigen::Vector2f cartesian_point(provaDescrittore[i](0)*0.15 + img_width/2, provaDescrittore[i](1)*0.15 + img_height/2);
+      scan_for_disp.push_back(cartesian_point);
+    }
+    drawPoints(local_image, scan_for_disp, cv::Scalar(0,150,255),1);
+
+    Vector2fVector prev_scan_for_disp;
+    int numberOfLandmarks2 = provaDescrittore2.size();
+    for (int i=0; i<numberOfLandmarks2; i++){
+      Eigen::Vector2f cartesian_point(provaDescrittore2[i](0)*0.15 + img_width/2, provaDescrittore2[i](1)*0.15 + img_height/2);
+      prev_scan_for_disp.push_back(cartesian_point);
+    }
+    drawPoints(local_image, prev_scan_for_disp, cv::Scalar(255,0,0),1);
+    // Draw result in local view
+    Vector2fVector transformed_scan_for_disp;
+    for (int i=0; i<numberOfLandmarks; i++){
+      Eigen::Vector2f transformed_point = rotationMatrixR*provaDescrittore[i] +translationVector;
+      // Eigen::Vector2f transformed_point = init_transform.inverse()*scans_cartesian.at(iter).at(i);
+      Eigen::Vector2f cartesian_point(transformed_point[0]*0,1 + img_width/2, transformed_point[1]*0,1 + img_height/2);
+      transformed_scan_for_disp.push_back(cartesian_point);
+    }
+    // 0,150,255
+    drawPoints(local_image, transformed_scan_for_disp, cv::Scalar(255,0,255),1);
+    // drawPoints(local_image, transformed_scan_for_disp, cv::Scalar(0,150,255),1);
+
+
+    cv::imshow("Scan matcher", local_image);
+    cv::waitKey(0);
   }
+  return 0;
 
 
   // Initialize images

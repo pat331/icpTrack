@@ -2684,6 +2684,8 @@ CMakeFiles/radarTest.dir/src/mainapp.cpp.o: ../fft-real/src/OscSinCos.h
 CMakeFiles/radarTest.dir/src/mainapp.cpp.o: ../fft-real/src/OscSinCos.hpp
 CMakeFiles/radarTest.dir/src/mainapp.cpp.o: ../fft-real/src/def.h
 CMakeFiles/radarTest.dir/src/mainapp.cpp.o: ../keyPointExtraction/preProcessRadarScan.h
+CMakeFiles/radarTest.dir/src/mainapp.cpp.o: ../rigidBodyMotion/rigidBodyMotion.h
+CMakeFiles/radarTest.dir/src/mainapp.cpp.o: ../rigidBodyMotion/singleValueDecomposition2D.h
 CMakeFiles/radarTest.dir/src/mainapp.cpp.o: ../include/data_association.h
 CMakeFiles/radarTest.dir/src/mainapp.cpp.o: ../include/defs.h
 CMakeFiles/radarTest.dir/src/mainapp.cpp.o: ../include/elaborationRadar.h

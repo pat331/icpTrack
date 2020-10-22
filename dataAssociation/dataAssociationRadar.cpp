@@ -4,6 +4,7 @@
 #include <vector>
 #include <cstdint>
 #include <cmath>
+#include <random>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv/highgui.h>
@@ -18,18 +19,22 @@ using namespace pr;
 
 
 Eigen::Matrix<float, 1, Eigen::Dynamic> greedyAlgorithm(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairwiseCompatibilities, Eigen::Matrix<float, 3, Eigen::Dynamic> matchProposal){
-
+  std::cerr << "DIMENSIONE COLS "<< pairwiseCompatibilities.cols() << '\n';
+  std::cerr << "DIMENSIONE ROWS "<< pairwiseCompatibilities.rows() << '\n';
   int numberOfAssociation = pairwiseCompatibilities.cols();
+  std::cerr << "numberOfAssociation "<<numberOfAssociation << '\n';
   Eigen::EigenSolver<Eigen::MatrixXf> es;
   // Eigen::MatrixXf A = MatrixXf::Random(4,4);
+  std::cerr << "/* error message0  */" << '\n';
   es.compute(pairwiseCompatibilities, /* computeEigenvectors = */ true);
-
-  cout << "The eigenvalues of A are: " << es.eigenvalues().transpose() << endl;
-  cout << "The eigenVectors of A are: " << es.eigenvectors().transpose() << endl;
-  std::cerr << "the first value of the first eigenvector are "<< es.eigenvectors().col(0)[0].real() << '\n';
-  std::cerr << "singolo autovalore "<< es.eigenvalues()[0] << '\n';
+  // std::cerr << "eigen "<< es.eigenvalues() << '\n';
+  // cout << "The eigenvalues of A are: " << es.eigenvalues()[0].real() << endl;
+  // cout << "The eigenVectors of A are: " << es.eigenvectors().transpose() << endl;
+  // std::cerr << "the first value of the first eigenvector are "<< es.eigenvectors().col(0)[0].real() << '\n';
+  // std::cerr << "singolo autovalore "<< es.eigenvalues()[0] << '\n';
 
   float maxEigenvalue;
+  std::cerr << "/* error message1 */" << '\n';
   int indexOfPrincipalVector;
   std::vector<int> unsearched (pairwiseCompatibilities.cols(),0);
   std::vector<int> m (pairwiseCompatibilities.cols(),0);
@@ -37,30 +42,57 @@ Eigen::Matrix<float, 1, Eigen::Dynamic> greedyAlgorithm(Eigen::Matrix<float, Eig
   Eigen::Matrix<float, 1, Eigen::Dynamic> solution;
   solution.resize(pairwiseCompatibilities.cols());
   solution.setZero();
-
+  std::cerr << "/* error message2 */" << '\n';
   int score = 0;
 
+  Eigen::Matrix<float,1,Eigen::Dynamic> eigenPrincipaleigen;
+  eigenPrincipaleigen.resize(1,pairwiseCompatibilities.cols());
   // Search for the principal eigenvector
-  for (int i = 0; i < pairwiseCompatibilities.cols(); i++) {
-    if (i == 0) {
-      maxEigenvalue = es.eigenvalues()[i].real();
-      indexOfPrincipalVector = i;
-      continue;
-    }
-
-    if (maxEigenvalue < es.eigenvalues()[i].real()) {
-      maxEigenvalue = es.eigenvalues()[i].real();
-      indexOfPrincipalVector = i;
-    }
-    // The principal eigenVector is the es.eigenvectors().col(indexOfPrincipalVector)
+  // for (int i = 0; i < pairwiseCompatibilities.cols(); i++) {
+  //   std::cerr << "/* error message if?? */" << '\n';
+  //   if (i == 0) {
+  //     std::cerr << "/* error message3a */" << '\n';
+  //     maxEigenvalue = es.eigenvalues()[0].real();
+  //     std::cerr << "/* error message3 */" << '\n';
+  //     indexOfPrincipalVector = i;
+  //     continue;
+  //   }
+  //
+  //   if (maxEigenvalue < es.eigenvalues()[i].real()) {
+  //     maxEigenvalue = es.eigenvalues()[i].real();
+  //     indexOfPrincipalVector = i;
+  //   }
+  // }
+  // POWER METHOD  /////////////////////////////////////////////////////////////
+  const size_t elements = pairwiseCompatibilities.cols();
+  std::vector<float> provaPrincipalEigen(elements);
+  uniform_real_distribution<float> distribution(0.0f, 2.0f); //Values between 0 and 2
+  std::mt19937 engine; // Mersenne twister MT19937
+  auto generator = std::bind(distribution, engine);
+  std::generate_n(provaPrincipalEigen.begin(), elements, generator);
+  int numberOfIterationForPowerMethod = 10;
+  std::cerr << "cazzo de budda" << '\n';
+  for (int i = 0; i < elements; i++) {
+    eigenPrincipaleigen(i) = provaPrincipalEigen[i];
   }
+  std::cerr << "cazzo di budda 2 " << '\n';
+  for (int i = 0; i < numberOfIterationForPowerMethod; i++) {
+    std::cerr << "eigenPrincipaleigen size "<< eigenPrincipaleigen.size() << '\n';
+    std::cerr << "pairwiseCompatibilities size "<< pairwiseCompatibilities.size() << '\n';
+    eigenPrincipaleigen = pairwiseCompatibilities * eigenPrincipaleigen.transpose();
+
+  }
+  std::cerr << "eigenPrincipaleigen "<< eigenPrincipaleigen << '\n';
+  //////////////////////////////////////////////////////////////////////////////
+    // The principal eigenVector is the es.eigenvectors().col(indexOfPrincipalVector)
+  // }
   float m_g;
   int indexM;
   int numberUnsearched = 0;
   float checkScore;
 
-  std::cerr << "max" << maxEigenvalue <<  '\n';
-  std::cerr << "index max " << indexOfPrincipalVector << '\n';
+  // std::cerr << "max" << maxEigenvalue <<  '\n';
+  // std::cerr << "index max " << indexOfPrincipalVector << '\n';
   do {
     m_g = 0; // possibile errore nel caso un autovettore fosse degenere
     for (int j = 0; j < pairwiseCompatibilities.cols(); j++) {
@@ -69,15 +101,18 @@ Eigen::Matrix<float, 1, Eigen::Dynamic> greedyAlgorithm(Eigen::Matrix<float, Eig
         continue;
       }
       if (j==0 && m[j]==0) {
-        m_g = es.eigenvectors().col(indexOfPrincipalVector)[j].real();
+        // m_g = es.eigenvectors().col(indexOfPrincipalVector)[j].real();
+        m_g = eigenPrincipaleigen(j);
         indexM = j;
         continue;
       }
       std::cerr << "m_g pow = "<< pow(m_g,2) << '\n';
-      std::cerr << "comparazione pow  "<< pow(es.eigenvectors().col(indexOfPrincipalVector)[j].real(),2)<< '\n';
-      if (pow(m_g,2) <= pow(es.eigenvectors().col(indexOfPrincipalVector)[j].real(),2)) {
+      // std::cerr << "comparazione pow  "<< pow(es.eigenvectors().col(indexOfPrincipalVector)[j].real(),2)<< '\n';
+      // if (pow(m_g,2) <= pow(es.eigenvectors().col(indexOfPrincipalVector)[j].real(),2)) {
+      if (pow(m_g,2) <= pow(eigenPrincipaleigen(j),2)) {
         std::cerr << "entrato " << '\n';
-        m_g = es.eigenvectors().col(indexOfPrincipalVector)[j].real();
+        // m_g = es.eigenvectors().col(indexOfPrincipalVector)[j].real();
+        m_g = eigenPrincipaleigen(j);
         indexM = j;
       }
     }
@@ -107,6 +142,7 @@ Eigen::Matrix<float, 1, Eigen::Dynamic> greedyAlgorithm(Eigen::Matrix<float, Eig
       }
     }
   } while(numberUnsearched <= unsearched.size());
+  std::cerr << "dimension "<< solution.size() << '\n';
   std::cerr << "solution vector optimization " << solution << '\n';
 
   return solution;
@@ -115,8 +151,9 @@ Eigen::Matrix<float, 1, Eigen::Dynamic> greedyAlgorithm(Eigen::Matrix<float, Eig
 Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> createPairwiseCompatibilities(VectorOfDescriptorVector descriptor1, VectorOfDescriptorVector descriptor2, Eigen::Matrix<float, 3, Eigen::Dynamic> unaryMatch){
     //  Number of possible pairs in n landMark n(n-1)/2
     // Prendere tutte le coppie di indici possibili
-    // int numberOfLandmarks = descriptor1.size();
-    int numberOfLandmarks = 15;
+    int numberOfLandmarks = descriptor1.size();
+    std::cerr << "DIMENSIONE "<< numberOfLandmarks << '\n';
+    // int numberOfLandmarks = 250;
     // Inizializzo la matrice del compatibility score
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairwiseCompatibilities;
     pairwiseCompatibilities.resize(numberOfLandmarks, numberOfLandmarks);

@@ -36,15 +36,15 @@ Mat keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
   SPrime = getMatrixSPrime(radarScanImage);
   HMatrix = getMatrixH(prewittImage, SPrime);
 
-  std::string HHH = "h  ";
-  cv::namedWindow(HHH, cv::WINDOW_AUTOSIZE);
-  cv::imshow(HHH, HMatrix); //show image.
-  cv::waitKey();
+  // std::string HHH = "h  ";
+  // cv::namedWindow(HHH, cv::WINDOW_AUTOSIZE);
+  // cv::imshow(HHH, HMatrix); //show image.
+  // cv::waitKey();
 
-  std::string rararscannormale = "radarScanImage  ";
-  cv::namedWindow(rararscannormale, cv::WINDOW_AUTOSIZE);
-  cv::imshow(rararscannormale, radarScanImage); //show image.
-  cv::waitKey();
+  // std::string rararscannormale = "radarScanImage  ";
+  // cv::namedWindow(rararscannormale, cv::WINDOW_AUTOSIZE);
+  // cv::imshow(rararscannormale, radarScanImage); //show image.
+  // cv::waitKey();
 
   Vector3fVector indicesMatrixH = getIndicesOfElementsInDescendingOrder(HMatrix);
 
