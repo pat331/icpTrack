@@ -150,7 +150,7 @@ int main(int argc, char *argv[]){
     // indici = getIndicesOfElementsInDescendingOrder(prewitt);
 
 
-    int lmax = 399;
+    int lmax = 1000;
     // key1 = keyPointExtraction(bikeStrike, lmax);
     // key2 = keyPointExtraction(bikeORIGINAL, lmax);
 
@@ -207,8 +207,22 @@ int main(int argc, char *argv[]){
     rotationMatrixR = rigidBodyMotion(provaDescrittore, provaDescrittore2, provaMatchProposal, optimizedAssociationSolution);
     std::cerr << "rotationMatrixR "<< rotationMatrixR << '\n';
 
-    Eigen::Vector2f meanScan1 = meanScan(provaDescrittore);
-    Eigen::Vector2f meanScan2 = meanScan(provaDescrittore2);
+    Eigen::Vector2f meanScan1;
+    meanScan1 << 0,0;
+    Eigen::Vector2f meanScan2;
+    meanScan2 << 0,0;
+
+    ////////////////////////////////////////////////////////////////////////////
+    for (int i = 0; i < provaDescrittore.size(); i++) {
+      meanScan1(0) += provaDescrittore[i](0);
+      meanScan1(1) += provaDescrittore[i](1);
+
+      meanScan2(0) += provaDescrittore2[(int)provaMatchProposal(1,i)](0);
+      meanScan2(1) += provaDescrittore2[(int)provaMatchProposal(1,i)](1);
+    }
+    meanScan1 = meanScan1 / (int)provaDescrittore.size();
+    meanScan2 = meanScan2 / (int)provaDescrittore.size();
+    ////////////////////////////////////////////////////////////////////////////
     Eigen::Vector2f translationVector = meanScan2 - rotationMatrixR * meanScan1;
     // std::cerr << "determinant "<< rotationMatrixR.determinant() << '\n';
     // std::cerr << "descrittore dimensione  2 "<< provaDescrittore2.size() << '\n';
@@ -283,61 +297,28 @@ int main(int argc, char *argv[]){
     // cartFiltered.resize(1000);
     // A questo punti la mia immagini in coordinate cartesiane
     // è composta da punti i cui pixel hanno valore 255 e 0. Devo identificare le coordinate di quelli con valore 255
-    cv::findNonZero(cartFiltered, locations);
-    int numberOfPoint = locations.rows; // Number of landmarks
-    // Now i iterate over the number of landMark
-    landMarkCartesian.push_back(Vector2fVector());
-    for(int k = 0; k < numberOfPoint; k++){
-      pnt = locations.at<Point>(k);
-      // Converto coordinate pixel in coordinate world
-      pixelRange = (cropped.rows / 2);
-      pntWorld = pixelToWorldCoord(pnt, pixelRange);
-      //
-      landMarkCartesian.back().push_back(pntWorld);
-
-
-
-    }
-
-    std::string landmarkprint1 = " landmark scan1 ";
-    cv::namedWindow(landmarkprint1, cv::WINDOW_AUTOSIZE);
-    cv::imshow(landmarkprint1, key1); //show image.
-    cv::waitKey();
-
-    // std::string landmarkprint2 = "landmark scan2  ";
-    // cv::namedWindow(landmarkprint2, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(landmarkprint2, key2); //show image.
-    // cv::waitKey();
-
-    // std::string landmarkprint3 = "landmark scan3  ";
-    // cv::namedWindow(landmarkprint3, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(landmarkprint3, key3); //show image.
-    // cv::waitKey();
-    // std::string matriceH = "Normale  ";
-    // cv::namedWindow(matriceH, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(matriceH, HMatrix); //show image.
-    // cv::waitKey();
+    // cv::findNonZero(cartFiltered, locations);
+    // int numberOfPoint = locations.rows; // Number of landmarks
+    // // Now i iterate over the number of landMark
+    // landMarkCartesian.push_back(Vector2fVector());
+    // for(int k = 0; k < numberOfPoint; k++){
+    //   pnt = locations.at<Point>(k);
+    //   // Converto coordinate pixel in coordinate world
+    //   pixelRange = (cropped.rows / 2);
+    //   pntWorld = pixelToWorldCoord(pnt, pixelRange);
+    //   //
+    //   landMarkCartesian.back().push_back(pntWorld);
     //
     //
-    // std::string windowNameCanny1 = "cartesian point  ";
-    // cv::namedWindow(windowNameCanny1, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(windowNameCanny1, cart); //show image.
-    // cv::waitKey();
     //
-    // std::string windowNameCanny2 = "cartesian point  ";
-    // cv::namedWindow(windowNameCanny2, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(windowNameCanny2, cartFiltered); //show image.
-    // cv::waitKey();
-
+    // }
+    //
     // std::string landmarkprint1 = " landmark scan1 ";
     // cv::namedWindow(landmarkprint1, cv::WINDOW_AUTOSIZE);
     // cv::imshow(landmarkprint1, key1); //show image.
     // cv::waitKey();
-    //
-    // std::string landmarkprint2 = "landmark scan2  ";
-    // cv::namedWindow(landmarkprint2, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(landmarkprint2, key2); //show image.
-    // cv::waitKey();
+
+
 
     RGBImage local_image(img_width, img_height);
     local_image.create(img_width, img_height);
@@ -353,32 +334,41 @@ int main(int argc, char *argv[]){
 
     // Show 2 scans
     // Scale and translate scans for better display
+    std::cerr << "translationVector "<<translationVector << '\n';
     Vector2fVector scan_for_disp;
     int numberOfLandmarks = provaDescrittore.size(); // numero di landmark nel radarscan "iter"
     std::cout << "landmarks nello scan di partenza "<< numberOfLandmarks  << std::endl;
     for (int i=0; i<numberOfLandmarks; i++){
-      Eigen::Vector2f cartesian_point(provaDescrittore[i](0)*0.15 + img_width/2, provaDescrittore[i](1)*0.15 + img_height/2);
+      Eigen::Vector2f cartesian_point(provaDescrittore[i](0)*0.2 + img_width/2, provaDescrittore[i](1)*0.2 + img_height/2);
       scan_for_disp.push_back(cartesian_point);
     }
-    drawPoints(local_image, scan_for_disp, cv::Scalar(0,150,255),1);
+    drawPoints(local_image, scan_for_disp, cv::Scalar(255,0,0),1);
 
     Vector2fVector prev_scan_for_disp;
     int numberOfLandmarks2 = provaDescrittore2.size();
     for (int i=0; i<numberOfLandmarks2; i++){
-      Eigen::Vector2f cartesian_point(provaDescrittore2[i](0)*0.15 + img_width/2, provaDescrittore2[i](1)*0.15 + img_height/2);
+      Eigen::Vector2f cartesian_point(provaDescrittore2[i](0)*0.2 + img_width/2, provaDescrittore2[i](1)*0.2 + img_height/2);
       prev_scan_for_disp.push_back(cartesian_point);
     }
-    drawPoints(local_image, prev_scan_for_disp, cv::Scalar(255,0,0),1);
+    drawPoints(local_image, prev_scan_for_disp, cv::Scalar(0,255,0),1);
     // Draw result in local view
     Vector2fVector transformed_scan_for_disp;
+    Eigen::Vector2f positionLand;
     for (int i=0; i<numberOfLandmarks; i++){
-      Eigen::Vector2f transformed_point = rotationMatrixR*provaDescrittore[i] +translationVector;
+      positionLand(0) = provaDescrittore[i](0);
+      positionLand(1) = provaDescrittore[i](1);
+      Eigen::Vector2f transformed_point = rotationMatrixR * positionLand + translationVector;
+      // transformed_point(0) = rotationMatrixR(0,0)*positionLand(0)+rotationMatrixR(0,1)*positionLand(1) + translationVector(0);
+      // transformed_point(1) = rotationMatrixR(1,0)*positionLand(0)+rotationMatrixR(1,1)*positionLand(1) + translationVector(1);
+      // transformed_point(0) = 1;
+      // transformed_point(1) = 1;
+
       // Eigen::Vector2f transformed_point = init_transform.inverse()*scans_cartesian.at(iter).at(i);
-      Eigen::Vector2f cartesian_point(transformed_point[0]*0,1 + img_width/2, transformed_point[1]*0,1 + img_height/2);
+      Eigen::Vector2f cartesian_point(transformed_point(0)*0.2 + img_width/2, transformed_point(1)*0.2 + img_height/2);
       transformed_scan_for_disp.push_back(cartesian_point);
     }
     // 0,150,255
-    drawPoints(local_image, transformed_scan_for_disp, cv::Scalar(255,0,255),1);
+    drawPoints(local_image, transformed_scan_for_disp, cv::Scalar(0,0,255),1);
     // drawPoints(local_image, transformed_scan_for_disp, cv::Scalar(0,150,255),1);
 
 
