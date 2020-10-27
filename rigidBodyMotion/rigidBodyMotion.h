@@ -29,4 +29,9 @@ Eigen::Matrix<float, 2, 2> computeCrossCorrelationMatrix(Vector2fVector &xPrime,
                                                          Eigen::Matrix<float, 1, Eigen::Dynamic> optimizedAssociationSolution);
 
 Eigen::Vector2f meanScan(VectorOfDescriptorVector &descriptor);
+Eigen::Vector4f meanScanWithAssociation(VectorOfDescriptorVector &descriptor1,
+                                        VectorOfDescriptorVector &descriptor2,
+                                        Eigen::Matrix<float, 3, Eigen::Dynamic> &matchProposal,
+                                        Eigen::Matrix<float, 1, Eigen::Dynamic> &associationSolution);
+
 Vector2fVector positionPrime(VectorOfDescriptorVector &descriptor, Eigen::Vector2f meanScan);

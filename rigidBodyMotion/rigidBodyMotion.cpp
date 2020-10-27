@@ -109,6 +109,33 @@ Eigen::Vector2f meanScan(VectorOfDescriptorVector &descriptor){
   meanScan << sumPositionX,sumPositionY;
   return meanScan;
 }
+Eigen::Vector4f meanScanWithAssociation(VectorOfDescriptorVector &descriptor1,
+                                        VectorOfDescriptorVector &descriptor2,
+                                        Eigen::Matrix<float, 3, Eigen::Dynamic> &matchProposalAss,
+                                        Eigen::Matrix<float, 1, Eigen::Dynamic> &associationSolution){
+  float sumPositionScan1X = 0;
+  float sumPositionScan1Y = 0;
+  float sumPositionScan2X = 0;
+  float sumPositionScan2Y = 0;
+
+  for (size_t i = 0; i < descriptor1.size(); i++) {
+    if (associationSolution[i] == 1) {
+      sumPositionScan1X += descriptor1[i](0);
+      sumPositionScan1Y += descriptor1[i](1);
+      sumPositionScan2X += descriptor2[(int)matchProposalAss(1,i)](0);
+      sumPositionScan2Y += descriptor2[(int)matchProposalAss(1,i)](1);
+    }
+  }
+  sumPositionScan1X = sumPositionScan1X/(float)descriptor1.size();
+  sumPositionScan1Y = sumPositionScan1Y/(float)descriptor1.size();
+  sumPositionScan2X = sumPositionScan2X/(float)descriptor1.size();
+  sumPositionScan2Y = sumPositionScan2Y/(float)descriptor1.size();
+
+  Eigen::Vector4f meanScan1And2;
+  meanScan1And2 << sumPositionScan1X, sumPositionScan1Y, sumPositionScan2X, sumPositionScan2Y;
+  return meanScan1And2;
+
+                                        }
 
 Vector2fVector positionPrime(VectorOfDescriptorVector &descriptor, Eigen::Vector2f meanScan){
     Vector2fVector prime;

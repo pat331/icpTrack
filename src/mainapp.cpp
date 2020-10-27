@@ -3,6 +3,7 @@
 #include <string>
 #include <vector>
 #include <cstdint>
+#include <random>
 #include <opencv2/opencv.hpp>
 #include <opencv2/imgproc.hpp>
 #include <opencv2/features2d.hpp>
@@ -150,28 +151,54 @@ int main(int argc, char *argv[]){
     // indici = getIndicesOfElementsInDescendingOrder(prewitt);
 
 
-    int lmax = 1000;
+    int lmax = 300;
     // key1 = keyPointExtraction(bikeStrike, lmax);
     // key2 = keyPointExtraction(bikeORIGINAL, lmax);
 
+
     key1 = keyPointExtraction(radarScanImage, lmax);
     key2 = keyPointExtraction(radarScanImageSucc, lmax);
+    // con lmax=200 ci sono più keypoint nel secondo scan, quindi devo invertire key1 con key2
+    // key2 = keyPointExtraction(radarScanImage, lmax);
+    // key1 = keyPointExtraction(radarScanImageSucc, lmax);
     // RICORDA DI INSERIRE UN CHECK SU NUMERO DI LANMARK DEL PRIMO E SECONDO SCAN
     VectorOfDescriptorVector provaDescrittore, provaDescrittore2, provaDescrittoreRelaxation;
 
     provaDescrittore = createDescriptor(key1);
+    //////////////////////////////////////////////////////////////////////////////
+    // Define random generator with Gaussian distribution
+    const double mean = 0.0;
+    const double stddev = 0.2;
+    std::default_random_engine generator;
+    std::normal_distribution<double> dist(mean, stddev);
+
+    provaDescrittoreRelaxation = provaDescrittore;
+    float x1,y1;
+    float traslazione = 10;
+    for (size_t i = 0; i < provaDescrittore.size(); i++) {
+      x1 = provaDescrittore[i](0)*cos(3.14/8) + provaDescrittore[i](1)*(-sin(3.14/8))+ traslazione;
+      y1 = provaDescrittore[i](0)*sin(3.14/8) + provaDescrittore[i](1)*cos(3.14/8) + traslazione;
+      provaDescrittoreRelaxation[i](0) = x1;
+      provaDescrittoreRelaxation[i](1) = y1;
+      for (size_t j = 2; j < 400+3500; j++) {
+        provaDescrittoreRelaxation[i](j) += (float) dist(generator);
+      }
+    }
+    ////////////////////////////////////////////////////////////////////////////
     provaDescrittore2 = createDescriptor(key2);
     Eigen::Matrix<float, 3, Eigen::Dynamic> provaMatchProposal;
     // provaMatchProposal = matchProposal(provaDescrittore,provaDescrittore);
+    // provaMatchProposal = matchProposal(provaDescrittore,provaDescrittoreRelaxation);
     provaMatchProposal = matchProposal(provaDescrittore,provaDescrittore2);
-    for (size_t i = 0; i < 284; i++) {
-      std::cerr << "proposal "<< provaMatchProposal(1,i) << '\n';
-    }
+    // for (size_t i = 0; i < 284; i++) {
+    //   std::cerr << "proposal "<< provaMatchProposal(1,i) << '\n';
+    // }
     Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> pairWiseMatrix;
     // int numberOfLandmarks = provaDescrittore.size();
     // pairWiseMatrix.resize(numberOfLandmarks, numberOfLandmarks);
 
     // pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore, provaMatchProposal);
+    // pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittoreRelaxation, provaMatchProposal);
     pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore2, provaMatchProposal);
 
     // pairWiseMatrix = createPairwiseCompatibilities(provaDescrittore,provaDescrittore2, provaMatchProposal);
@@ -204,26 +231,48 @@ int main(int argc, char *argv[]){
     ////////////////////////////////////////////////////////////////////////////
     std::cerr << "ROTAZIONE DUE" << '\n';
     Eigen::Matrix<float, 2,2> rotationMatrixR;
+    // rotationMatrixR = rigidBodyMotion(provaDescrittore, provaDescrittore, provaMatchProposal, optimizedAssociationSolution);
+    // rotationMatrixR = rigidBodyMotion(provaDescrittore, provaDescrittoreRelaxation, provaMatchProposal, optimizedAssociationSolution);
     rotationMatrixR = rigidBodyMotion(provaDescrittore, provaDescrittore2, provaMatchProposal, optimizedAssociationSolution);
     std::cerr << "rotationMatrixR "<< rotationMatrixR << '\n';
 
+    // Eigen::Vector2f meanScan1;
+    // meanScan1 << 0,0;
+    // Eigen::Vector2f meanScan2;
+    // meanScan2 << 0,0;
+
+    ////////////////////////////////////////////////////////////////////////////
+    // for (int i = 0; i < provaDescrittore.size(); i++) {
+    //   meanScan1(0) += provaDescrittore[i](0);
+    //   meanScan1(1) += provaDescrittore[i](1);
+    //
+    //   meanScan2(0) += provaDescrittore2[(int)provaMatchProposal(1,i)](0);
+    //   meanScan2(1) += provaDescrittore2[(int)provaMatchProposal(1,i)](1);
+    // }
+    // meanScan1 = meanScan1 / (int)provaDescrittore.size();
+    // meanScan2 = meanScan2 / (int)provaDescrittore.size();
+    ////////////////////////////////////////////////////////////////////////////
+    Eigen::Vector4f meanScan1And2;
+    meanScan1And2 = meanScanWithAssociation(provaDescrittore,
+                                            provaDescrittore2,
+                                            provaMatchProposal,
+                                            optimizedAssociationSolution);
+    // meanScan1And2 = meanScanWithAssociation(provaDescrittore,
+    //                                         provaDescrittoreRelaxation,
+    //                                         provaMatchProposal,
+    //                                         optimizedAssociationSolution);
+    ////////////////////////////////////////////////////////////////////////////
+    // Eigen::Vector2f translationVector = meanScan2 - rotationMatrixR * meanScan1;
     Eigen::Vector2f meanScan1;
-    meanScan1 << 0,0;
+    meanScan1 << meanScan1And2(0),meanScan1And2(1);
     Eigen::Vector2f meanScan2;
-    meanScan2 << 0,0;
-
-    ////////////////////////////////////////////////////////////////////////////
-    for (int i = 0; i < provaDescrittore.size(); i++) {
-      meanScan1(0) += provaDescrittore[i](0);
-      meanScan1(1) += provaDescrittore[i](1);
-
-      meanScan2(0) += provaDescrittore2[(int)provaMatchProposal(1,i)](0);
-      meanScan2(1) += provaDescrittore2[(int)provaMatchProposal(1,i)](1);
-    }
-    meanScan1 = meanScan1 / (int)provaDescrittore.size();
-    meanScan2 = meanScan2 / (int)provaDescrittore.size();
-    ////////////////////////////////////////////////////////////////////////////
-    Eigen::Vector2f translationVector = meanScan2 - rotationMatrixR * meanScan1;
+    meanScan2 << meanScan1And2(2),meanScan1And2(3);
+    Eigen::Vector2f translationVector;
+    std::cerr << "arrivato " << '\n';
+    translationVector = meanScan2 - rotationMatrixR * meanScan1;
+    std::cerr << "MEAN1 "<< meanScan1 << '\n';
+    std::cerr << "MEAN2 "<< meanScan2 << '\n';
+    std::cerr << "translation VECTOR " <<translationVector << '\n';
     // std::cerr << "determinant "<< rotationMatrixR.determinant() << '\n';
     // std::cerr << "descrittore dimensione  2 "<< provaDescrittore2.size() << '\n';
     // std::cout << "size landmark matrix"<< key1.size() << '\n';
@@ -319,7 +368,7 @@ int main(int argc, char *argv[]){
     // cv::waitKey();
 
 
-
+    std::cerr << "optimizedAssociationSolution "<< optimizedAssociationSolution << '\n';
     RGBImage local_image(img_width, img_height);
     local_image.create(img_width, img_height);
     local_image=cv::Vec3b(255,255,255);
@@ -338,38 +387,75 @@ int main(int argc, char *argv[]){
     Vector2fVector scan_for_disp;
     int numberOfLandmarks = provaDescrittore.size(); // numero di landmark nel radarscan "iter"
     std::cout << "landmarks nello scan di partenza "<< numberOfLandmarks  << std::endl;
-    for (int i=0; i<numberOfLandmarks; i++){
-      Eigen::Vector2f cartesian_point(provaDescrittore[i](0)*0.2 + img_width/2, provaDescrittore[i](1)*0.2 + img_height/2);
-      scan_for_disp.push_back(cartesian_point);
-    }
-    drawPoints(local_image, scan_for_disp, cv::Scalar(255,0,0),1);
-
+    ////////////////////////////////////////////////////////////////////////////
+    // for (int i=0; i<numberOfLandmarks; i++){
+    //   Eigen::Vector2f cartesian_point(provaDescrittore[i](0)*0.3 + img_width/2, provaDescrittore[i](1)*0.3 + img_height/2);
+    //   scan_for_disp.push_back(cartesian_point);
+    // }
+    // drawPoints(local_image, scan_for_disp, cv::Scalar(255,0,0),1);
+    //
+    // Vector2fVector prev_scan_for_disp;
+    // int numberOfLandmarks2 = provaDescrittore2.size();
+    // for (int i=0; i<numberOfLandmarks2; i++){
+    //   Eigen::Vector2f cartesian_point(provaDescrittore2[i](0)*0.3 + img_width/2, provaDescrittore2[i](1)*0.3 + img_height/2);
+    //   prev_scan_for_disp.push_back(cartesian_point);
+    // }
+    // drawPoints(local_image, prev_scan_for_disp, cv::Scalar(0,255,0),1);
+    ////////////////////////////////////////////////////////////////////////////
+    std::cerr << "PROVA MATCH proposal "<<  provaMatchProposal << '\n';
     Vector2fVector prev_scan_for_disp;
+    IntPairVector correspondences;
     int numberOfLandmarks2 = provaDescrittore2.size();
-    for (int i=0; i<numberOfLandmarks2; i++){
-      Eigen::Vector2f cartesian_point(provaDescrittore2[i](0)*0.2 + img_width/2, provaDescrittore2[i](1)*0.2 + img_height/2);
-      prev_scan_for_disp.push_back(cartesian_point);
+    int indiceProvaAssociazioni;
+
+    for (int i=0; i<numberOfLandmarks; i++){
+      if (optimizedAssociationSolution[i] == 1) {
+        Eigen::Vector2f cartesian_point(provaDescrittore[i](0)*0.2 + img_width/2, provaDescrittore[i](1)*0.2 + img_height/2);
+        scan_for_disp.push_back(cartesian_point);
+
+        Eigen::Vector2f cartesian_point2(provaDescrittore2[(int)provaMatchProposal(1,i)](0)*0.2 + img_width/2, provaDescrittore2[(int)provaMatchProposal(1,i)](1)*0.2 + img_height/2);
+        // Eigen::Vector2f cartesian_point2(provaDescrittore[(int)provaMatchProposal(1,i)](0)*0.3 + img_width/2, provaDescrittore[(int)provaMatchProposal(1,i)](1)*0.3 + img_height/2);
+        // Eigen::Vector2f cartesian_point2(provaDescrittoreRelaxation[(int)provaMatchProposal(1,i)](0)*0.3 + img_width/2, provaDescrittoreRelaxation[(int)provaMatchProposal(1,i)](1)*0.3 + img_height/2);
+        prev_scan_for_disp.push_back(cartesian_point2);
+        indiceProvaAssociazioni = prev_scan_for_disp.size();
+
+        IntPair correspondence;
+        correspondence.first = indiceProvaAssociazioni-1;
+        correspondence.second = indiceProvaAssociazioni-1;
+        correspondences.push_back(correspondence);
+      }
     }
-    drawPoints(local_image, prev_scan_for_disp, cv::Scalar(0,255,0),1);
+
+    drawPoints(local_image, scan_for_disp, cv::Scalar(255,0,0),1);
+    drawPoints(local_image, prev_scan_for_disp, cv::Scalar(0,0,255),1);
+    drawCorrespondences(local_image, prev_scan_for_disp, scan_for_disp, correspondences, cv::Scalar(0,255,0));
     // Draw result in local view
     Vector2fVector transformed_scan_for_disp;
     Eigen::Vector2f positionLand;
     for (int i=0; i<numberOfLandmarks; i++){
-      positionLand(0) = provaDescrittore[i](0);
-      positionLand(1) = provaDescrittore[i](1);
-      Eigen::Vector2f transformed_point = rotationMatrixR * positionLand + translationVector;
-      // transformed_point(0) = rotationMatrixR(0,0)*positionLand(0)+rotationMatrixR(0,1)*positionLand(1) + translationVector(0);
-      // transformed_point(1) = rotationMatrixR(1,0)*positionLand(0)+rotationMatrixR(1,1)*positionLand(1) + translationVector(1);
-      // transformed_point(0) = 1;
-      // transformed_point(1) = 1;
 
       // Eigen::Vector2f transformed_point = init_transform.inverse()*scans_cartesian.at(iter).at(i);
-      Eigen::Vector2f cartesian_point(transformed_point(0)*0.2 + img_width/2, transformed_point(1)*0.2 + img_height/2);
-      transformed_scan_for_disp.push_back(cartesian_point);
+      if (optimizedAssociationSolution[i] == 1 ) {
+        positionLand(0) = provaDescrittore[i](0);
+        positionLand(1) = provaDescrittore[i](1);
+        Eigen::Vector2f transformed_point = rotationMatrixR * positionLand + translationVector;
+
+        Eigen::Vector2f cartesian_point(transformed_point(0)*0.2 + img_width/2, transformed_point(1)*0.2 + img_height/2);
+        transformed_scan_for_disp.push_back(cartesian_point);
+      }
     }
     // 0,150,255
-    drawPoints(local_image, transformed_scan_for_disp, cv::Scalar(0,0,255),1);
-    // drawPoints(local_image, transformed_scan_for_disp, cv::Scalar(0,150,255),1);
+    // drawPoints(local_image, transformed_scan_for_disp, cv::Scalar(0,255,250),1);
+
+    // CORRESPONDENCES
+    // IntPairVector correspondences;
+    // for (size_t i = 0; i < provaDescrittore.size(); i++) {
+    //   IntPair correspondence;
+    //   correspondence.first = i;
+    //   correspondence.second = (int)provaMatchProposal(1,i);
+    //   correspondences.push_back(correspondence);
+    // }
+    // drawCorrespondences(local_image, prev_scan_for_disp, scan_for_disp, correspondences, cv::Scalar(0,255,0));
 
 
     cv::imshow("Scan matcher", local_image);
