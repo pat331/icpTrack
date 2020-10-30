@@ -204,7 +204,7 @@ int main(int argc, char *argv[]){
     // //-- Show detected matches
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
     //-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
-    int minHessian = 90;
+    int minHessian = 20;
     Ptr<SURF> detector = SURF::create( minHessian );
     std::vector<KeyPoint> keypoints1, keypoints2;
     Mat descriptors1, descriptors2;
@@ -278,7 +278,25 @@ int main(int argc, char *argv[]){
       post_scan_for_disp.push_back(cartesian_point);
     }
     drawPoints(local_image, post_scan_for_disp, cv::Scalar(0,255,0),1);
+
+    Vector2fVector transformed_scan_for_disp;
+    Eigen::Vector2f positionLand;
+    for (int i=0; i<ultimate_matches.size(); i++){
+      // Eigen::Vector2f transformed_point = init_transform.inverse()*scans_cartesian.at(iter).at(i);
+
+      positionLand(0) = keypoints1[ultimate_matches[i].queryIdx].pt.x;
+      positionLand(1) = keypoints1[ultimate_matches[i].queryIdx].pt.y;
+      Eigen::Vector2f transformed_point = R * positionLand + translationVector;
+
+      Eigen::Vector2f cartesian_point(transformed_point(0), transformed_point(1));
+      transformed_scan_for_disp.push_back(cartesian_point);
+
+    }
+    // 0,150,255
+    drawPoints(local_image, transformed_scan_for_disp, cv::Scalar(0,0,255),1);
+
     cv::imshow("Scan matcher", local_image);
+
     waitKey(0);
     return 0;
     ////////////////////////////////////////////////////////////////////////////
