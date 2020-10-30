@@ -25,7 +25,7 @@ using namespace cv::xfeatures2d;
 #include "dataAssociationRadar.h"
 #include "rigidBodyMotion.h"
 #include "singleValueDecomposition2D.h"
-
+#include "dataAssociationSURF.h"
 
 #define refinement
 
@@ -146,15 +146,149 @@ int main(int argc, char *argv[]){
     // cv::imshow(hm, HMatrix); //show image.
     // cv::waitKey();
     // //
-
+    ////////////////////////////////////////////////////////////////////////////
     // Vector3fVector indici;
     // indici = getIndicesOfElementsInDescendingOrder(prewitt);
+    //-- Step 1: Detect the keypoints using SURF Detector
+    cv::Mat provaImageSurf = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
+    double maxRadius = 400.0;
+    Point2f center( 400, 400);
+    int flags = INTER_LINEAR + WARP_FILL_OUTLIERS + WARP_INVERSE_MAP;
+    warpPolar(provaImageSurf, cart, Size(800,800) , center, maxRadius,  flags);
+    //
+    // int minHessian = 1500;
+    // Ptr<SURF> detector = SURF::create( minHessian );
+    // std::vector<KeyPoint> keypoints;
+    // detector->detect( cart, keypoints );
+    // //-- Draw keypoints
+    // Mat img_keypoints;
+    // drawKeypoints( cart, keypoints, img_keypoints );
+    // //-- Show detected (drawn) keypoints
+    // imshow("SURF Keypoints", img_keypoints );
+    //
+    //
+    cv::Mat provaImageSurf2 = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
+    warpPolar(provaImageSurf2, cartSucc, Size(800,800) , center, maxRadius,  flags);
+    //
+    //
+    // Ptr<SURF> detector2 = SURF::create( minHessian );
+    // std::vector<KeyPoint> keypoints2;
+    // detector2->detect( cartSucc , keypoints2 );
+    // //-- Draw keypoints
+    // Mat img_keypoints2;
+    // drawKeypoints( cart, keypoints2, img_keypoints2 );
+    // //-- Show detected (drawn) keypoints
+    // imshow("SURF Keypoints2", img_keypoints2 );
+    // waitKey();
+    // return 0;
+    //////////////////////////////////////////////////////////////////////////////////////////////////////
+    //-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
+    // int minHessian = 1700;
+    // Ptr<SURF> detector = SURF::create( minHessian );
+    // std::vector<KeyPoint> keypoints1, keypoints2;
+    // Mat descriptors1, descriptors2;
+    // detector->detectAndCompute( cart, noArray(), keypoints1, descriptors1 );
+    // detector->detectAndCompute( cartSucc, noArray(), keypoints2, descriptors2 );
+    // //-- Step 2: Matching descriptor vectors with a brute force matcher
+    // // Since SURF is a floating-point descriptor NORM_L2 is used
+    // Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE);
+    // std::vector< DMatch > matches;
+    // matcher->match( descriptors1, descriptors2, matches );
+    // // Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE);
+    // // std::vector< DMatch > matches;
+    // // matcher->match( descriptors1, descriptors2, matches );
+    // //-- Draw matches
+    // Mat img_matches;
+    // drawMatches( cart, keypoints1, cartSucc, keypoints2, matches, img_matches );
+    // // drawMatches( cart, keypoints1, cart, keypoints1, matches, img_matches );
+    // //-- Show detected matches
+    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
+    int minHessian = 90;
+    Ptr<SURF> detector = SURF::create( minHessian );
+    std::vector<KeyPoint> keypoints1, keypoints2;
+    Mat descriptors1, descriptors2;
+    detector->detectAndCompute( cart, noArray(), keypoints1, descriptors1 );
+    detector->detectAndCompute( cartSucc, noArray(), keypoints2, descriptors2 );
 
+    //-- Step 2: Matching descriptor vectors with a FLANN based matcher
+    // Since SURF is a floating-point descriptor NORM_L2 is used
+    Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
+    std::vector< std::vector<DMatch> > knn_matches;
+    matcher->knnMatch( descriptors1, descriptors2, knn_matches, 2 );
+    //-- Filter matches using the Lowe's ratio test
+    const float ratio_thresh = 0.7f;
+    std::vector<DMatch> good_matches;
+    for (size_t i = 0; i < knn_matches.size(); i++)
+    {
+        if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
+        {
+            good_matches.push_back(knn_matches[i][0]);
+        }
+    }
+    //-- Draw matches
+    Mat img_matches;
+    drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
+                 Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    imshow("Matches", img_matches );
+    waitKey();
 
-    int lmax = 300;
+    std::vector<int> maxClique;
+    maxClique = createConsistencyMatrix(keypoints1, keypoints2, good_matches);
+
+    std::vector<DMatch> ultimate_matches;
+    for (size_t i = 0; i < good_matches.size(); i++) {
+      if (maxClique[i] == 1) {
+        ultimate_matches.push_back(good_matches[i]);
+      }
+    }
+    Eigen::Matrix<float, 2, 2> R;
+    R = rigidBodyMotionSurf(keypoints1, keypoints2, ultimate_matches);
+    std::cerr << "R "<< R << '\n';
+
+    Eigen::Vector2f mean1;
+    mean1 = meanScanSurf1(keypoints1, ultimate_matches);
+    Eigen::Vector2f mean2;
+    mean2 = meanScanSurf2(keypoints2, ultimate_matches);
+
+    Eigen::Vector2f translationVector;
+    translationVector = mean2 - R * mean1;
+    std::cerr << "translation vector "<< translationVector << '\n';
+    //-- Draw final matches
+    Mat img_matches2;
+    drawMatches( cart, keypoints1, cartSucc, keypoints2, ultimate_matches, img_matches2, Scalar::all(-1),
+                 Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    imshow("Matches ultimate ", img_matches2 );
+    waitKey();
+
+    RGBImage local_image(img_width, img_height);
+    local_image.create(img_width, img_height);
+    local_image=cv::Vec3b(255,255,255);
+
+    Vector2fVector scan_for_disp;
+    for (int i=0; i<ultimate_matches.size(); i++){
+      Eigen::Vector2f cartesian_point(keypoints1[ultimate_matches[i].queryIdx].pt.x, keypoints1[ultimate_matches[i].queryIdx].pt.y);
+      scan_for_disp.push_back(cartesian_point);
+    }
+    drawPoints(local_image, scan_for_disp, cv::Scalar(255,0,0),1);
+
+    Vector2fVector post_scan_for_disp;
+    for (int i=0; i<ultimate_matches.size(); i++){
+      Eigen::Vector2f cartesian_point(keypoints2[ultimate_matches[i].trainIdx].pt.x, keypoints2[ultimate_matches[i].trainIdx].pt.y);
+      post_scan_for_disp.push_back(cartesian_point);
+    }
+    drawPoints(local_image, post_scan_for_disp, cv::Scalar(0,255,0),1);
+    cv::imshow("Scan matcher", local_image);
+    waitKey(0);
+    return 0;
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////
+    int lmax = 1000;
     // key1 = keyPointExtraction(bikeStrike, lmax);
     // key2 = keyPointExtraction(bikeORIGINAL, lmax);
-
+    // radarScanImage =  cropRadarScan(radarScanImage, 0, 0, 1750 ,400);
+    // radarScanImageSucc =  cropRadarScan(radarScanImageSucc, 0, 0, 1750,400);
 
     key1 = keyPointExtraction(radarScanImage, lmax);
     key2 = keyPointExtraction(radarScanImageSucc, lmax);
@@ -175,15 +309,15 @@ int main(int argc, char *argv[]){
     provaDescrittoreRelaxation = provaDescrittore;
     float x1,y1;
     float traslazione = 10;
-    for (size_t i = 0; i < provaDescrittore.size(); i++) {
-      x1 = provaDescrittore[i](0)*cos(3.14/8) + provaDescrittore[i](1)*(-sin(3.14/8))+ traslazione;
-      y1 = provaDescrittore[i](0)*sin(3.14/8) + provaDescrittore[i](1)*cos(3.14/8) + traslazione;
-      provaDescrittoreRelaxation[i](0) = x1;
-      provaDescrittoreRelaxation[i](1) = y1;
-      for (size_t j = 2; j < 400+3500; j++) {
-        provaDescrittoreRelaxation[i](j) += (float) dist(generator);
-      }
-    }
+    // for (size_t i = 0; i < provaDescrittore.size(); i++) {
+    //   x1 = provaDescrittore[i](0)*cos(3.14/8) + provaDescrittore[i](1)*(-sin(3.14/8))+ traslazione;
+    //   y1 = provaDescrittore[i](0)*sin(3.14/8) + provaDescrittore[i](1)*cos(3.14/8) + traslazione;
+    //   provaDescrittoreRelaxation[i](0) = x1;
+    //   provaDescrittoreRelaxation[i](1) = y1;
+    //   for (size_t j = 2; j < 400+3500; j++) {
+    //     provaDescrittoreRelaxation[i](j) += (float) dist(generator);
+    //   }
+    // }
     ////////////////////////////////////////////////////////////////////////////
     provaDescrittore2 = createDescriptor(key2);
     Eigen::Matrix<float, 3, Eigen::Dynamic> provaMatchProposal;
@@ -263,16 +397,16 @@ int main(int argc, char *argv[]){
     //                                         optimizedAssociationSolution);
     ////////////////////////////////////////////////////////////////////////////
     // Eigen::Vector2f translationVector = meanScan2 - rotationMatrixR * meanScan1;
-    Eigen::Vector2f meanScan1;
-    meanScan1 << meanScan1And2(0),meanScan1And2(1);
-    Eigen::Vector2f meanScan2;
-    meanScan2 << meanScan1And2(2),meanScan1And2(3);
-    Eigen::Vector2f translationVector;
-    std::cerr << "arrivato " << '\n';
-    translationVector = meanScan2 - rotationMatrixR * meanScan1;
-    std::cerr << "MEAN1 "<< meanScan1 << '\n';
-    std::cerr << "MEAN2 "<< meanScan2 << '\n';
-    std::cerr << "translation VECTOR " <<translationVector << '\n';
+    // Eigen::Vector2f meanScan1;
+    // meanScan1 << meanScan1And2(0),meanScan1And2(1);
+    // Eigen::Vector2f meanScan2;
+    // meanScan2 << meanScan1And2(2),meanScan1And2(3);
+    // Eigen::Vector2f translationVector;
+    // std::cerr << "arrivato " << '\n';
+    // translationVector = meanScan2 - rotationMatrixR * meanScan1;
+    // std::cerr << "MEAN1 "<< meanScan1 << '\n';
+    // std::cerr << "MEAN2 "<< meanScan2 << '\n';
+    // std::cerr << "translation VECTOR " <<translationVector << '\n';
     // std::cerr << "determinant "<< rotationMatrixR.determinant() << '\n';
     // std::cerr << "descrittore dimensione  2 "<< provaDescrittore2.size() << '\n';
     // std::cout << "size landmark matrix"<< key1.size() << '\n';
@@ -282,11 +416,11 @@ int main(int argc, char *argv[]){
     // cropped = cropRadarScan(radarScanImage);
     // croppedSucc = cropRadarScan(radarScanImageSucc);
 
-    double maxRadius = 400.0;
-    Point2f center( 400, 400);
-    int flags = INTER_LINEAR + WARP_FILL_OUTLIERS + WARP_INVERSE_MAP;
-
-    warpPolar(radarScanImage, cart, Size(800,800) , center, maxRadius,  flags);
+    // double maxRadius = 400.0;
+    // Point2f center( 400, 400);
+    // int flags = INTER_LINEAR + WARP_FILL_OUTLIERS + WARP_INVERSE_MAP;
+    //
+    // warpPolar(radarScanImage, cart, Size(800,800) , center, maxRadius,  flags);
 
     // warpPolar(cropped, cart, Size(800,800) , center, maxRadius,  flags);
     // cv::linearPolar(cropped, cart, Point2f(cropped.cols / 2, cropped.rows / 2), (cropped.rows / 2), CV_INTER_LINEAR | CV_WARP_INVERSE_MAP);
@@ -367,26 +501,26 @@ int main(int argc, char *argv[]){
     // cv::imshow(landmarkprint1, key1); //show image.
     // cv::waitKey();
 
-
-    std::cerr << "optimizedAssociationSolution "<< optimizedAssociationSolution << '\n';
-    RGBImage local_image(img_width, img_height);
-    local_image.create(img_width, img_height);
-    local_image=cv::Vec3b(255,255,255);
-    // Global view
-    RGBImage map_image(img_width, img_height);
-    map_image.create(img_width, img_height);
-    map_image=cv::Vec3b(255,255,255);
-
-    RGBImage refined_map_image(img_width, img_height);
-    refined_map_image.create(img_width, img_height);
-    refined_map_image=cv::Vec3b(255,255,255);
-
-    // Show 2 scans
-    // Scale and translate scans for better display
-    std::cerr << "translationVector "<<translationVector << '\n';
-    Vector2fVector scan_for_disp;
-    int numberOfLandmarks = provaDescrittore.size(); // numero di landmark nel radarscan "iter"
-    std::cout << "landmarks nello scan di partenza "<< numberOfLandmarks  << std::endl;
+    std::cerr << "bla bla bla " << '\n';
+    // std::cerr << "optimizedAssociationSolution "<< optimizedAssociationSolution << '\n';
+    // RGBImage local_image(img_width, img_height);
+    // local_image.create(img_width, img_height);
+    // local_image=cv::Vec3b(255,255,255);
+    // // Global view
+    // RGBImage map_image(img_width, img_height);
+    // map_image.create(img_width, img_height);
+    // map_image=cv::Vec3b(255,255,255);
+    //
+    // RGBImage refined_map_image(img_width, img_height);
+    // refined_map_image.create(img_width, img_height);
+    // refined_map_image=cv::Vec3b(255,255,255);
+    //
+    // // Show 2 scans
+    // // Scale and translate scans for better display
+    // std::cerr << "translationVector "<<translationVector << '\n';
+    // Vector2fVector scan_for_disp;
+    // int numberOfLandmarks = provaDescrittore.size(); // numero di landmark nel radarscan "iter"
+    // std::cout << "landmarks nello scan di partenza "<< numberOfLandmarks  << std::endl;
     ////////////////////////////////////////////////////////////////////////////
     // for (int i=0; i<numberOfLandmarks; i++){
     //   Eigen::Vector2f cartesian_point(provaDescrittore[i](0)*0.3 + img_width/2, provaDescrittore[i](1)*0.3 + img_height/2);
@@ -402,49 +536,49 @@ int main(int argc, char *argv[]){
     // }
     // drawPoints(local_image, prev_scan_for_disp, cv::Scalar(0,255,0),1);
     ////////////////////////////////////////////////////////////////////////////
-    std::cerr << "PROVA MATCH proposal "<<  provaMatchProposal << '\n';
-    Vector2fVector prev_scan_for_disp;
-    IntPairVector correspondences;
-    int numberOfLandmarks2 = provaDescrittore2.size();
-    int indiceProvaAssociazioni;
-
-    for (int i=0; i<numberOfLandmarks; i++){
-      if (optimizedAssociationSolution[i] == 1) {
-        Eigen::Vector2f cartesian_point(provaDescrittore[i](0)*0.2 + img_width/2, provaDescrittore[i](1)*0.2 + img_height/2);
-        scan_for_disp.push_back(cartesian_point);
-
-        Eigen::Vector2f cartesian_point2(provaDescrittore2[(int)provaMatchProposal(1,i)](0)*0.2 + img_width/2, provaDescrittore2[(int)provaMatchProposal(1,i)](1)*0.2 + img_height/2);
-        // Eigen::Vector2f cartesian_point2(provaDescrittore[(int)provaMatchProposal(1,i)](0)*0.3 + img_width/2, provaDescrittore[(int)provaMatchProposal(1,i)](1)*0.3 + img_height/2);
-        // Eigen::Vector2f cartesian_point2(provaDescrittoreRelaxation[(int)provaMatchProposal(1,i)](0)*0.3 + img_width/2, provaDescrittoreRelaxation[(int)provaMatchProposal(1,i)](1)*0.3 + img_height/2);
-        prev_scan_for_disp.push_back(cartesian_point2);
-        indiceProvaAssociazioni = prev_scan_for_disp.size();
-
-        IntPair correspondence;
-        correspondence.first = indiceProvaAssociazioni-1;
-        correspondence.second = indiceProvaAssociazioni-1;
-        correspondences.push_back(correspondence);
-      }
-    }
-
-    drawPoints(local_image, scan_for_disp, cv::Scalar(255,0,0),1);
-    drawPoints(local_image, prev_scan_for_disp, cv::Scalar(0,0,255),1);
-    drawCorrespondences(local_image, prev_scan_for_disp, scan_for_disp, correspondences, cv::Scalar(0,255,0));
-    // Draw result in local view
-    Vector2fVector transformed_scan_for_disp;
-    Eigen::Vector2f positionLand;
-    for (int i=0; i<numberOfLandmarks; i++){
-
-      // Eigen::Vector2f transformed_point = init_transform.inverse()*scans_cartesian.at(iter).at(i);
-      if (optimizedAssociationSolution[i] == 1 ) {
-        positionLand(0) = provaDescrittore[i](0);
-        positionLand(1) = provaDescrittore[i](1);
-        Eigen::Vector2f transformed_point = rotationMatrixR * positionLand + translationVector;
-
-        Eigen::Vector2f cartesian_point(transformed_point(0)*0.2 + img_width/2, transformed_point(1)*0.2 + img_height/2);
-        transformed_scan_for_disp.push_back(cartesian_point);
-      }
-    }
-    // 0,150,255
+    // std::cerr << "PROVA MATCH proposal "<<  provaMatchProposal << '\n';
+    // Vector2fVector prev_scan_for_disp;
+    // IntPairVector correspondences;
+    // int numberOfLandmarks2 = provaDescrittore2.size();
+    // int indiceProvaAssociazioni;
+    //
+    // for (int i=0; i<numberOfLandmarks; i++){
+    //   if (optimizedAssociationSolution[i] == 1) {
+    //     Eigen::Vector2f cartesian_point(provaDescrittore[i](0)*0.2 + img_width/2, provaDescrittore[i](1)*0.2 + img_height/2);
+    //     scan_for_disp.push_back(cartesian_point);
+    //
+    //     Eigen::Vector2f cartesian_point2(provaDescrittore2[(int)provaMatchProposal(1,i)](0)*0.2 + img_width/2, provaDescrittore2[(int)provaMatchProposal(1,i)](1)*0.2 + img_height/2);
+    //     // Eigen::Vector2f cartesian_point2(provaDescrittore[(int)provaMatchProposal(1,i)](0)*0.3 + img_width/2, provaDescrittore[(int)provaMatchProposal(1,i)](1)*0.3 + img_height/2);
+    //     // Eigen::Vector2f cartesian_point2(provaDescrittoreRelaxation[(int)provaMatchProposal(1,i)](0)*0.3 + img_width/2, provaDescrittoreRelaxation[(int)provaMatchProposal(1,i)](1)*0.3 + img_height/2);
+    //     prev_scan_for_disp.push_back(cartesian_point2);
+    //     indiceProvaAssociazioni = prev_scan_for_disp.size();
+    //
+    //     IntPair correspondence;
+    //     correspondence.first = indiceProvaAssociazioni-1;
+    //     correspondence.second = indiceProvaAssociazioni-1;
+    //     correspondences.push_back(correspondence);
+    //   }
+    // }
+    //
+    // drawPoints(local_image, scan_for_disp, cv::Scalar(255,0,0),1);
+    // drawPoints(local_image, prev_scan_for_disp, cv::Scalar(0,0,255),1);
+    // drawCorrespondences(local_image, prev_scan_for_disp, scan_for_disp, correspondences, cv::Scalar(0,255,0));
+    // // Draw result in local view
+    // Vector2fVector transformed_scan_for_disp;
+    // Eigen::Vector2f positionLand;
+    // for (int i=0; i<numberOfLandmarks; i++){
+    //
+    //   // Eigen::Vector2f transformed_point = init_transform.inverse()*scans_cartesian.at(iter).at(i);
+    //   if (optimizedAssociationSolution[i] == 1 ) {
+    //     positionLand(0) = provaDescrittore[i](0);
+    //     positionLand(1) = provaDescrittore[i](1);
+    //     Eigen::Vector2f transformed_point = rotationMatrixR * positionLand + translationVector;
+    //
+    //     Eigen::Vector2f cartesian_point(transformed_point(0)*0.2 + img_width/2, transformed_point(1)*0.2 + img_height/2);
+    //     transformed_scan_for_disp.push_back(cartesian_point);
+    //   }
+    // }
+    // // 0,150,255
     // drawPoints(local_image, transformed_scan_for_disp, cv::Scalar(0,255,250),1);
 
     // CORRESPONDENCES
@@ -458,8 +592,8 @@ int main(int argc, char *argv[]){
     // drawCorrespondences(local_image, prev_scan_for_disp, scan_for_disp, correspondences, cv::Scalar(0,255,0));
 
 
-    cv::imshow("Scan matcher", local_image);
-    cv::waitKey(0);
+    // cv::imshow("Scan matcher", local_image);
+    // cv::waitKey(0);
   }
   return 0;
 

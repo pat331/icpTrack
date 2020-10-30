@@ -17,6 +17,46 @@ using namespace std;
 using namespace cv;
 using namespace pr;
 
+Eigen::Matrix<float, 2, 2> rigidBodyMotionSurf(vector<KeyPoint> keypoints1,
+                                               vector<KeyPoint> keypoints2,
+                                               vector< DMatch > matches){
+
+  Eigen::Vector2f meanFirstScan = meanScanSurf1(keypoints1, matches);
+  // Eigen::Vector2f meanFirstScan = meanScan(descriptor1);
+  Eigen::Vector2f meanSecondScan = meanScanSurf2(keypoints2, matches);
+  // Eigen::Vector2f meanSecondScan = meanScan(descriptor2);
+
+
+  Vector2fVector xPrimeVector = positionPrimeSurf1(keypoints1, matches, meanFirstScan);
+  Vector2fVector yPrimeVector = positionPrimeSurf2(keypoints2, matches, meanSecondScan);
+  // Ricorda che la cross crossCorrelationMatrix va fatta solo delle associazioni approvate dal greedyAlgorithm
+  Eigen::Matrix<float, 2, 2> crossCorrelationMatrix = computeCrossCorrelationMatrixSurf(xPrimeVector,
+                                                                                        yPrimeVector);
+  std::cerr << "crossCorrelationMatrix "<< crossCorrelationMatrix << '\n';
+  //Computation of singularValueDecomposition2D
+  // Eigen::Matrix<float, 2, 2> U = computationOfU(crossCorrelationMatrix(0,0),
+  //                                               crossCorrelationMatrix(0,1),
+  //                                               crossCorrelationMatrix(1,0),
+  //                                               crossCorrelationMatrix(1,1));
+  //
+  // Eigen::Matrix<float, 2, 2> V = computationOfV(crossCorrelationMatrix(0,0),
+  //                                               crossCorrelationMatrix(0,1),
+  //                                               crossCorrelationMatrix(1,0),
+  //                                               crossCorrelationMatrix(1,1));
+
+  // Eigen::Matrix<float, 2, 2> R = U * V.transpose();
+
+  //////////////////////////////////////////////////////////////////////////////
+  // PROVA CON EIGEN SVD
+  Eigen::JacobiSVD<Eigen::MatrixXf> svd(crossCorrelationMatrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  // cout << "Its singular values are:" << endl << svd.singularValues() << endl;
+  cout << "Its left singular vectors are the columns of the thin U matrix:" << endl << svd.matrixU() << endl;
+  cout << "Its right singular vectors are the columns of the thin V matrix:" << endl << svd.matrixV() << endl;
+  //////////////////////////////////////////////////////////////////////////////
+  Eigen::Matrix<float, 2, 2> R = svd.matrixU() * svd.matrixV().transpose();
+  return R;
+                                       }
+
 Eigen::Matrix<float, 2, 2> rigidBodyMotion(VectorOfDescriptorVector &descriptor1,
                                            VectorOfDescriptorVector &descriptor2,
                                            Eigen::Matrix<float, 3, Eigen::Dynamic> &matchProposal,
@@ -61,6 +101,31 @@ Eigen::Matrix<float, 2, 2> rigidBodyMotion(VectorOfDescriptorVector &descriptor1
                                        }
 
 ////////////////////////////////////////////////////////////////////////////////
+Eigen::Matrix<float, 2, 2> computeCrossCorrelationMatrixSurf(Vector2fVector &xPrime,
+                                                             Vector2fVector &yPrime){
+  Eigen::Matrix<float, 2, 2> crossCorrelationMatrix;
+  Eigen::Matrix<float, 2, 2> partialComputation;
+  crossCorrelationMatrix.setZero();
+  int indexAssiociated;
+  float N = (float)xPrime.size();
+  for (size_t i = 0; i < xPrime.size(); i++) {
+    // indexAssiociated = (int) matchProposal(1,i);
+    // if (optimizedAssociationSolution(i) == 1) {
+    partialComputation = yPrime[i]*xPrime[i].transpose();
+    // partialComputation = xPrime[i]*yPrime[indexAssiociated].transpose();
+    partialComputation = partialComputation*1/N;
+
+    crossCorrelationMatrix(0,0) += partialComputation(0,0);
+    crossCorrelationMatrix(0,1) += partialComputation(0,1);
+    crossCorrelationMatrix(1,0) += partialComputation(1,0);
+    crossCorrelationMatrix(1,1) += partialComputation(1,1);
+
+    // }
+
+  }
+  return crossCorrelationMatrix;
+}
+
 Eigen::Matrix<float, 2, 2> computeCrossCorrelationMatrix(Vector2fVector &xPrime,
                                                          Vector2fVector &yPrime,
                                                          Eigen::Matrix<float, 3, Eigen::Dynamic> &matchProposal,
@@ -88,6 +153,43 @@ Eigen::Matrix<float, 2, 2> computeCrossCorrelationMatrix(Vector2fVector &xPrime,
   return crossCorrelationMatrix;
 }
 
+Eigen::Vector2f meanScanSurf1(vector<KeyPoint> keypoints, vector< DMatch > matches){
+  // int numberOfLandmarks = descriptor.size();
+  float sumPositionX = 0;
+  float sumPositionY = 0;
+  // Itero su tutti i match e non su tutti i keypoints
+  for (size_t i = 0; i < matches.size(); i++) {
+    sumPositionX += keypoints[matches[i].queryIdx].pt.x;
+    sumPositionY += keypoints[matches[i].queryIdx].pt.y;
+  }
+  sumPositionX = sumPositionX / (int) matches.size();
+  sumPositionY = sumPositionY / (int) matches.size();
+  // sumPositionX = sumPositionX/divisor;
+  // sumPositionY = sumPositionY/divisor;
+
+  Eigen::Vector2f meanScan;
+  meanScan << sumPositionX,sumPositionY;
+  return meanScan;
+}
+
+Eigen::Vector2f meanScanSurf2(vector<KeyPoint> keypoints, vector< DMatch > matches){
+  // int numberOfLandmarks = descriptor.size();
+  float sumPositionX = 0;
+  float sumPositionY = 0;
+  // Itero su tutti i match e non su tutti i keypoints
+  for (size_t i = 0; i < matches.size(); i++) {
+    sumPositionX += keypoints[matches[i].trainIdx].pt.x;
+    sumPositionY += keypoints[matches[i].trainIdx].pt.y;
+  }
+  sumPositionX = sumPositionX / (int) matches.size();
+  sumPositionY = sumPositionY / (int) matches.size();
+  // sumPositionX = sumPositionX/divisor;
+  // sumPositionY = sumPositionY/divisor;
+
+  Eigen::Vector2f meanScan;
+  meanScan << sumPositionX,sumPositionY;
+  return meanScan;
+}
 
 Eigen::Vector2f meanScan(VectorOfDescriptorVector &descriptor){
   // int numberOfLandmarks = descriptor.size();
@@ -136,6 +238,31 @@ Eigen::Vector4f meanScanWithAssociation(VectorOfDescriptorVector &descriptor1,
   return meanScan1And2;
 
                                         }
+
+
+Vector2fVector positionPrimeSurf1(vector<KeyPoint> keypoints, vector< DMatch > matches, Eigen::Vector2f meanScan){
+    Vector2fVector prime;
+    Eigen::Vector2f originalPosition;
+
+    for (size_t i = 0; i < matches.size(); i++) {
+      originalPosition <<  keypoints[matches[i].queryIdx].pt.x - meanScan(0),
+                           keypoints[matches[i].queryIdx].pt.y - meanScan(1);
+      prime.push_back(originalPosition);
+    }
+    return prime;
+}
+
+Vector2fVector positionPrimeSurf2(vector<KeyPoint> keypoints, vector< DMatch > matches, Eigen::Vector2f meanScan){
+    Vector2fVector prime;
+    Eigen::Vector2f originalPosition;
+
+    for (size_t i = 0; i < matches.size(); i++) {
+      originalPosition <<  keypoints[matches[i].trainIdx].pt.x - meanScan(0),
+                           keypoints[matches[i].trainIdx].pt.y - meanScan(1);
+      prime.push_back(originalPosition);
+    }
+    return prime;
+}
 
 Vector2fVector positionPrime(VectorOfDescriptorVector &descriptor, Eigen::Vector2f meanScan){
     Vector2fVector prime;

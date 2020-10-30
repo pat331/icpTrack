@@ -20,7 +20,8 @@ namespace pr {
   #define OPENCV_KEY_DELETE 3014656
   #define OPENCV_KEY_ESCAPE 27
 
-  typedef Eigen::Matrix<float, 1,2+400+3500> VectorDescriptor; // Dimension descriptor = position of the landmark + number of angle + number of range in Radar scan
+  typedef Eigen::Matrix<float, 1,2+400+350> VectorDescriptor; // Dimension descriptor = position of the landmark + number of angle + number of range in Radar scan
+  // typedef Eigen::Matrix<float, 1,2+400+3500> VectorDescriptor; // Dimension descriptor = position of the landmark + number of angle + number of range in Radar scan
   typedef std::vector<VectorDescriptor, Eigen::aligned_allocator<VectorDescriptor> > VectorOfDescriptorVector;
 
   typedef std::vector<Eigen::Vector4f, Eigen::aligned_allocator<Eigen::Vector4f> > Vector4fVector;

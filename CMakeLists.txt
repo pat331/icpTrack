@@ -38,6 +38,7 @@ include_directories(keyPointExtraction)
 include_directories(dataAssociation)
 include_directories(rigidBodyMotion)
 include_directories(fft-real/src)
+include_directories(dataAssociationSURF)
 
 
 
@@ -51,6 +52,7 @@ add_executable(radarTest ${SOURCES}
         ../dataAssociation/dataAssociationRadar.cpp
         ../rigidBodyMotion/singleValueDecomposition2D.cpp
         ../rigidBodyMotion/rigidBodyMotion.cpp
+        ../dataAssociationSURF/dataAssociationSURF.cpp
 
 
 )

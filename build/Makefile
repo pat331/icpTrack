@@ -150,6 +150,33 @@ dataAssociation/dataAssociationRadar.cpp.s:
 	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/dataAssociation/dataAssociationRadar.cpp.s
 .PHONY : dataAssociation/dataAssociationRadar.cpp.s
 
+dataAssociationSURF/dataAssociationSURF.o: dataAssociationSURF/dataAssociationSURF.cpp.o
+
+.PHONY : dataAssociationSURF/dataAssociationSURF.o
+
+# target to build an object file
+dataAssociationSURF/dataAssociationSURF.cpp.o:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/dataAssociationSURF/dataAssociationSURF.cpp.o
+.PHONY : dataAssociationSURF/dataAssociationSURF.cpp.o
+
+dataAssociationSURF/dataAssociationSURF.i: dataAssociationSURF/dataAssociationSURF.cpp.i
+
+.PHONY : dataAssociationSURF/dataAssociationSURF.i
+
+# target to preprocess a source file
+dataAssociationSURF/dataAssociationSURF.cpp.i:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/dataAssociationSURF/dataAssociationSURF.cpp.i
+.PHONY : dataAssociationSURF/dataAssociationSURF.cpp.i
+
+dataAssociationSURF/dataAssociationSURF.s: dataAssociationSURF/dataAssociationSURF.cpp.s
+
+.PHONY : dataAssociationSURF/dataAssociationSURF.s
+
+# target to generate assembly for a file
+dataAssociationSURF/dataAssociationSURF.cpp.s:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/dataAssociationSURF/dataAssociationSURF.cpp.s
+.PHONY : dataAssociationSURF/dataAssociationSURF.cpp.s
+
 include/data_association.o: include/data_association.cpp.o
 
 .PHONY : include/data_association.o
@@ -405,6 +432,9 @@ help:
 	@echo "... dataAssociation/dataAssociationRadar.o"
 	@echo "... dataAssociation/dataAssociationRadar.i"
 	@echo "... dataAssociation/dataAssociationRadar.s"
+	@echo "... dataAssociationSURF/dataAssociationSURF.o"
+	@echo "... dataAssociationSURF/dataAssociationSURF.i"
+	@echo "... dataAssociationSURF/dataAssociationSURF.s"
 	@echo "... include/data_association.o"
 	@echo "... include/data_association.i"
 	@echo "... include/data_association.s"

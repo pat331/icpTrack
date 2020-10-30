@@ -25,7 +25,7 @@ Mat keyPointExtraction(Mat radarScanImage, int maxNumberKeyPoint){
   Mat Rcart;
 
   int rows = radarScanImage.rows;
-  int cols = radarScanImage.cols;
+  int cols = (int)radarScanImage.cols;
   Mat_<float> R(rows,cols);
   R = Mat::zeros(rows, cols, CV_32FC1);
   Mat_<float> keyPoint(rows,cols);

@@ -191,6 +191,7 @@ Vector2fVector getPairInScan(int numberOfLandmarks){
 ////////////////////////////////////////////////////////////////////////////////
 Eigen::Matrix<float, 3, Eigen::Dynamic> matchProposal(VectorOfDescriptorVector descriptorScan1, VectorOfDescriptorVector descriptorScan2){
   // BRUTEFORCE
+  int annulusDescriptorSize = 350;
   float descriptorDistance;
   float bestDescriptorDistance;
   int indexAssociatedLandMark;
@@ -204,7 +205,7 @@ Eigen::Matrix<float, 3, Eigen::Dynamic> matchProposal(VectorOfDescriptorVector d
     bestDescriptorDistance = 99999; // fisso  ad un valore alto per comodita'. Verra' immediatamente cambiato nella prima iterazione su j
     for (size_t j = 0; j < descriptorScan2.size(); j++) {
       descriptorDistance = 0;
-      for (int k = 0; k < 400+3500; k++) { // Ricorda sempre che le prime due posizioni del descriptor sono occupate dalla posizione del landmark
+      for (int k = 0; k < 400+annulusDescriptorSize; k++) { // Ricorda sempre che le prime due posizioni del descriptor sono occupate dalla posizione del landmark
         // descriptorDistance += abs( descriptorScan1[i](k+2) - descriptorScan2[j](k+2) );
         descriptorDistance += abs( descriptorScan1[i](k+2) - descriptorScan2[j](k+2) );
       }
@@ -280,7 +281,8 @@ VectorOfDescriptorVector createDescriptor(Mat L){
   int positionHelper;
 
   std::vector<float> angularHistogram(400,0);
-  std::vector<float> annulusHistogram(3500,0);
+  // std::vector<float> annulusHistogram(3500,0);
+  std::vector<float> annulusHistogram(350,0);
 
   int normAngle = 0;
   int normAnnulus = 0;
@@ -295,7 +297,8 @@ VectorOfDescriptorVector createDescriptor(Mat L){
     for (int k = 0; k < landmarksPositionPolarInFrameLandmark.size(); k++) {
 
       angularHistogram[(int)landmarksPositionPolarInFrameLandmark[k](1)]++;
-      annulusHistogram[(int)(landmarksPositionPolarInFrameLandmark[k](0)/2)]++;
+      // annulusHistogram[(int)(landmarksPositionPolarInFrameLandmark[k](0)/2)]++;
+      annulusHistogram[(int)(landmarksPositionPolarInFrameLandmark[k](0)/(2*10))]++;
 
     }
     // find the max number of element in one slice
@@ -321,6 +324,7 @@ VectorOfDescriptorVector createDescriptor(Mat L){
       } else {
         lateralDescriptorBefore = 0;
       }
+
       // descriptorCurrentLandmark[k+2] = angularHistogram[k]/normAngle;
       descriptorCurrentLandmark[k+2] = (4*angularHistogram[k]+lateralDescriptorAfter+lateralDescriptorBefore)/(10*normAngle);
       // descriptorCurrentLandmark[k+2] = (angularHistogram[k]/normAngle +0.5*lateralDescriptorAfter +0.5*lateralDescriptorBefore)/2; // Plus two because the first two position are occupied by the position of the landMark
@@ -334,10 +338,27 @@ VectorOfDescriptorVector createDescriptor(Mat L){
     }
     // fill the annulus part of the descriptor
     for (size_t j = 0; j < annulusHistogram.size(); j++) {
-      // descriptorCurrentLandmark[j+2+400] = annulusHistogram[j]/normAnnulus;
-      descriptorCurrentLandmark[j+2+400] = 0;
-    }
+      float lateralDescriptorBefore, lateralDescriptorAfter;
+      if (j != 0 && j != 1) {
+        // lateralDescriptorBefore = angularHistogram[k-1]/normAngle;
+        lateralDescriptorBefore = annulusHistogram[j-1]+annulusHistogram[j-2];
+      } else {
+        lateralDescriptorBefore = 0;
+      }
+      if (j != annulusHistogram.size() && j != annulusHistogram.size()-1) {
+        // lateralDescriptorBefore = angularHistogram[k+1]/normAngle;
+        lateralDescriptorBefore = annulusHistogram[j+1]+annulusHistogram[j+2];
+      } else {
+        lateralDescriptorBefore = 0;
+      }
+      // float discountFactor = (350 -j)/350;
+      // descriptorCurrentLandmark[j+2+400] = 0;
+      descriptorCurrentLandmark[j+2+400] = annulusHistogram[j]/normAnnulus;
+      // descriptorCurrentLandmark[j+2+400] = (6*annulusHistogram[j]+lateralDescriptorAfter+lateralDescriptorBefore)/(10*normAnnulus);
 
+      // descriptorCurrentLandmark[j+2+400] = 0;
+    }
+    std::cerr << "arrovat" << '\n';
     rho = landmarksPositionPolar[i](0);
     theta = landmarksPositionPolar[i](1)*angleResolution;
     descriptorCurrentLandmark[0] = rho*cos(theta);
@@ -357,7 +378,7 @@ Vector2fVector getLandMarkPolarCoord(Mat L){
 
   for (int x = 0; x < L.cols; x++) {
     for (int y = 0; y < L.rows; y++) {
-      if (L.at<float>(Point(x, y)) > 0) {  // Se il punto e' un landmark procediamo a calcolare il desciptor
+      if (L.at<float>(Point(x, y)) > 0 && x < 1750) {  // Se il punto e' un landmark procediamo a calcolare il desciptor
         positionLandMark(0) = x;
         positionLandMark(1) = y;
         positionPolar.push_back(positionLandMark); // x = rho, y = theta
