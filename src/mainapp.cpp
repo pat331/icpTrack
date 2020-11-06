@@ -69,7 +69,7 @@ int main(int argc, char *argv[]){
   for(int i = 0; i < 1; i++){
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];
-    dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
+    dataFilePngSucc2 = pathRadarScanPngFiles[i+6];
     dataBikeStrike = "/home/luca/Downloads/Bikesgray.jpg";
     dataBikeStrikePrewitt = "/home/luca/Downloads/Bikesgray_prewitt.JPG";
 
@@ -151,10 +151,42 @@ int main(int argc, char *argv[]){
     // indici = getIndicesOfElementsInDescendingOrder(prewitt);
     //-- Step 1: Detect the keypoints using SURF Detector
     cv::Mat provaImageSurf = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
+
+    Mat prova;
+    prova =cropRadarScan(provaImageSurf, 11, 0, 2000, 400);
+
     double maxRadius = 400.0;
     Point2f center( 400, 400);
     int flags = INTER_LINEAR + WARP_FILL_OUTLIERS + WARP_INVERSE_MAP;
     warpPolar(provaImageSurf, cart, Size(800,800) , center, maxRadius,  flags);
+
+    Mat  provaBlur, provaBlur2,cartBlur, cartBlurSucc;
+    Mat provaBlura,provaBlurb,provaBlurc,provaBlurd;
+    // blur( cart, cartBlur, Size(3,3) );
+    GaussianBlur(cart,cartBlur,Size(3,3),0);
+    // GaussianBlur(cart,provaBlura,Size(3,3),0);
+    // GaussianBlur(provaBlura,provaBlurc,Size(3,3),0);
+    // GaussianBlur(provaBlurc,provaBlur,Size(3,3),0);
+    // GaussianBlur(provaBlur,cartBlur,Size(3,3),0);
+
+    // const String window_name = "Sobel Demo - Simple Edge Detector";
+    // int ksize = 3;
+    // // int ksize = CV_SCHARR;
+    // int scale = 1;
+    // int delta = 0;
+    // int ddepth = CV_16S;
+    // Mat grad_x, grad_y;
+    // Mat abs_grad_x, abs_grad_y;
+    // Mat grad, grad2;
+    // Sobel(provaBlura, grad_x, ddepth, 1, 0, ksize, scale, delta, BORDER_DEFAULT);
+    // Sobel(provaBlura, grad_y, ddepth, 0, 1, ksize, scale, delta, BORDER_DEFAULT);
+    // // converting back to CV_8U
+    // convertScaleAbs(grad_x, abs_grad_x);
+    // convertScaleAbs(grad_y, abs_grad_y);
+    // addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, cartBlur);
+
+
+
     //
     // int minHessian = 1500;
     // Ptr<SURF> detector = SURF::create( minHessian );
@@ -168,7 +200,26 @@ int main(int argc, char *argv[]){
     //
     //
     cv::Mat provaImageSurf2 = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
+    Mat prova2;
+    prova2 =cropRadarScan(provaImageSurf2, 11, 0, 2000, 400);
     warpPolar(provaImageSurf2, cartSucc, Size(800,800) , center, maxRadius,  flags);
+
+    // blur( cartSucc, cartBlurSucc, Size(3,3) );
+    GaussianBlur(cartSucc,cartBlurSucc,Size(3,3),0);
+    // GaussianBlur(cartSucc,provaBlurb,Size(3,3),0);
+    // GaussianBlur(provaBlurb,provaBlurd,Size(3,3),0);
+    // GaussianBlur(provaBlurd,provaBlur2,Size(3,3),0);
+    // GaussianBlur(provaBlur2,cartBlurSucc,Size(3,3),0);
+
+    // Mat grad_x2, grad_y2;
+    // Mat abs_grad_x2, abs_grad_y2;
+    //
+    // Sobel(provaBlurb, grad_x2, ddepth, 1, 0, ksize, scale, delta, BORDER_DEFAULT);
+    // Sobel(provaBlurb, grad_y2, ddepth, 0, 1, ksize, scale, delta, BORDER_DEFAULT);
+    // // converting back to CV_8U
+    // convertScaleAbs(grad_x2, abs_grad_x2);
+    // convertScaleAbs(grad_y2, abs_grad_y2);
+    // addWeighted(abs_grad_x2, 0.5, abs_grad_y2, 0.5, 0, cartBlurSucc);
     //
     //
     // Ptr<SURF> detector2 = SURF::create( minHessian );
@@ -203,14 +254,102 @@ int main(int argc, char *argv[]){
     // // drawMatches( cart, keypoints1, cart, keypoints1, matches, img_matches );
     // //-- Show detected matches
     ///////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Initiate ORB detector
+    // Ptr<FeatureDetector> detectorORB = ORB::create();
+    //
+    // // find the keypoints and descriptors with ORB
+    // std::vector<KeyPoint> keypoints_object, keypoints_scene;
+    // detectorORB->detect(cartBlur, keypoints_object);
+    // detectorORB->detect(cartBlurSucc, keypoints_scene);
+    //
+    // Ptr<DescriptorExtractor> extractor = ORB::create();
+    // Mat descriptors_object, descriptors_scene;
+    // extractor->compute(cartBlur, keypoints_object, descriptors_object );
+    // extractor->compute(cartBlurSucc, keypoints_scene, descriptors_scene );
+    //
+    // //-- Draw keypoints
+    // Mat img_keypointsORB;
+    // drawKeypoints( cartBlur, keypoints_object, img_keypointsORB );
+    // //-- Show detected (drawn) keypoints
+    // imshow("ORB Keypoints", img_keypointsORB );
+    // waitKey();
+    //
+    // Mat img_keypointsORB2;
+    // drawKeypoints( cartBlurSucc, keypoints_scene, img_keypointsORB2 );
+    // //-- Show detected (drawn) keypoints
+    // imshow("ORB Keypoints2", img_keypointsORB2 );
+    // waitKey();
+    //
+    // Ptr<DescriptorMatcher> matcherORB = DescriptorMatcher::create("BruteForce-Hamming");
+    // std::vector< std::vector<DMatch> > knn_matchesORB;
+    // matcherORB->knnMatch( descriptors_object, descriptors_scene, knn_matchesORB, 2 );
+    //
+    //
+    // const float ratio_threshORB = 0.7f;
+    // std::vector<DMatch> good_matchesORB;
+    // for (size_t i = 0; i < knn_matchesORB.size(); i++)
+    // {
+    //     if (knn_matchesORB[i][0].distance < ratio_threshORB * knn_matchesORB[i][1].distance)
+    //     {
+    //         good_matchesORB.push_back(knn_matchesORB[i][0]);
+    //     }
+    // }
+    //
+    // //-- Draw matches
+    // Mat img_matchesORB3;
+    // // drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
+    // //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    // drawMatches( cartBlur, keypoints_object, cartBlurSucc, keypoints_scene, good_matchesORB, img_matchesORB3, Scalar::all(-1),
+    //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    // imshow("Matches", img_matchesORB3 );
+    // waitKey();
+
+    // BFMatcher matcherORB(NORM_L2);
+    // std::vector<vector<DMatch> > matchesORB;
+    // matcher.knnMatch(descriptors1, descriptors2, matches,2);
+    //
+    // std::vector<DMatch> match1;
+    // std::vector<DMatch> match2;
+    //
+    // for(int i=0; i<matches.size(); i++)
+    // {
+    //     match1.push_back(matches[i][0]);
+    //     match2.push_back(matches[i][1]);
+    // }
+    //
+    // Mat img_matches1, img_matches2;
+    // drawMatches(img1, kp1, img2, kp2, match1, img_matches1);
+    // drawMatches(img1, kp1, img2, kp2, match2, img_matches2);
+    // Ptr<FeatureDetector> detectorORB = ORB::create();
+    // // OrbFeatureDetector detectorORB //OrbFeatureDetector detector;SurfFeatureDetector
+    // vector<KeyPoint> keypointsORB1;
+    // detectorORB.detect(cartBlur, keypointsORB1);
+    // vector<KeyPoint> keypointsORB2;
+    // detectorORB.detect(cartBlurSucc, keypointsORB2);
+    //
+    // OrbDescriptorExtractor extractorORB; //OrbDescriptorExtractor extractor; SurfDescriptorExtractor extractor;
+    // Mat descriptors_ORB1, descriptors_ORB2;
+    // extractorORB.compute( cartBlur, keypointsORB1, descriptors_ORB1 );
+    // extractorORB.compute( cartBlurSucc, keypointsORB2, descriptors_ORB2 );
+    //
+    // //-- Step 3: Matching descriptor vectors with a brute force matcher
+    // BFMatcher matcher(NORM_L2, true);   //BFMatcher matcher(NORM_L2);
+    //
+    // vector< DMatch> matches;
+    // matcher.match(descriptors_ORB1, descriptors_ORB2, matches);
+
+
+
+
+
     //-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
-    int minHessian = 20;
+    int minHessian = 300;
     Ptr<SURF> detector = SURF::create( minHessian );
     std::vector<KeyPoint> keypoints1, keypoints2;
     Mat descriptors1, descriptors2;
-    detector->detectAndCompute( cart, noArray(), keypoints1, descriptors1 );
-    detector->detectAndCompute( cartSucc, noArray(), keypoints2, descriptors2 );
 
+    detector->detectAndCompute( cartBlur, noArray(), keypoints1, descriptors1 );
+    detector->detectAndCompute( cartBlurSucc, noArray(), keypoints2, descriptors2 );
     //-- Step 2: Matching descriptor vectors with a FLANN based matcher
     // Since SURF is a floating-point descriptor NORM_L2 is used
     Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
@@ -226,15 +365,25 @@ int main(int argc, char *argv[]){
             good_matches.push_back(knn_matches[i][0]);
         }
     }
+    //-- Draw keypoints
+    Mat img_keypoints;
+    drawKeypoints( cartBlur, keypoints1, img_keypoints );
+    //-- Show detected (drawn) keypoints
+    imshow("SURF Keypoints", img_keypoints );
+    waitKey();
+
     //-- Draw matches
     Mat img_matches;
-    drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
+    // drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
+    //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
                  Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
     imshow("Matches", img_matches );
     waitKey();
 
     std::vector<int> maxClique;
     maxClique = createConsistencyMatrix(keypoints1, keypoints2, good_matches);
+    // maxClique = createConsistencyMatrix(keypoints_object, keypoints_scene, good_matchesORB);
 
     std::vector<DMatch> ultimate_matches;
     for (size_t i = 0; i < good_matches.size(); i++) {
@@ -242,6 +391,7 @@ int main(int argc, char *argv[]){
         ultimate_matches.push_back(good_matches[i]);
       }
     }
+
     Eigen::Matrix<float, 2, 2> R;
     R = rigidBodyMotionSurf(keypoints1, keypoints2, ultimate_matches);
     std::cerr << "R "<< R << '\n';
@@ -256,7 +406,9 @@ int main(int argc, char *argv[]){
     std::cerr << "translation vector "<< translationVector << '\n';
     //-- Draw final matches
     Mat img_matches2;
-    drawMatches( cart, keypoints1, cartSucc, keypoints2, ultimate_matches, img_matches2, Scalar::all(-1),
+    // drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, ultimate_matches, img_matches2, Scalar::all(-1),
+    //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, ultimate_matches, img_matches2, Scalar::all(-1),
                  Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
     imshow("Matches ultimate ", img_matches2 );
     waitKey();

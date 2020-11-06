@@ -18,7 +18,7 @@ using namespace cv;
 using namespace pr;
 
 std::vector<int> createConsistencyMatrix(vector<KeyPoint> keypoints1, vector<KeyPoint> keypoints2, vector< DMatch > matches){
-  float deltaC = 3.0; // Can be much smaller
+  float deltaC = 3; // Can be much smaller
   float distanceOnScan1;
   float distanceOnScan2;
   Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> consistencyMatrix;
@@ -44,7 +44,6 @@ std::vector<int> createConsistencyMatrix(vector<KeyPoint> keypoints1, vector<Key
   std::vector<int> clique;
   clique = Grasp(consistencyMatrix);
   for (size_t i = 0; i < clique.size(); i++) {
-    std::cerr << "maxClique "<< clique[i] << '\n';
   }
 
   return clique;
@@ -61,8 +60,6 @@ std::vector<int> Grasp(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> &con
   float alpha = 0.2;
   int randomIndex;
   int checkRCL = 0;
-  std::cerr << "SIZE "<< consistencyMatrix.cols() << '\n';
-  std::cerr << "consistencyMatrix "<< consistencyMatrix << '\n';
 
   while (checkC != finishLoop) {
     // Calculation of dMin and dMax
@@ -84,8 +81,7 @@ std::vector<int> Grasp(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> &con
         }
       }
     }
-    std::cerr << "dmax "<<dMax << '\n';
-    std::cerr << "dmin "<<dMin << '\n';
+
     //
     // Construction of RCL set
     std::vector<int> RCL(consistencyMatrix.cols(),0);
@@ -127,10 +123,10 @@ std::vector<int> Grasp(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> &con
 
     // Se C ha tutti zeri al suo interno
     // checkC = finishLoop
-    std::cerr << "checkC " <<checkC << '\n';
+
     // Return the max clique;
 
   }
-    std::cerr << "checkC " <<checkC << '\n';
+
     return Q;
 }

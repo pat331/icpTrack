@@ -18,7 +18,7 @@ namespace pr {
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
     //! ctor
-    SMICPSolver();
+    SMICPSolver(); // Questo è un constructor!! (metodo con stesso nome della classe)
 
     //! init method, call it at the beginning
     //! @param camera: the camera
