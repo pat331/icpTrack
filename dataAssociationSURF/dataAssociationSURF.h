@@ -23,5 +23,7 @@ using namespace cv;
 using namespace std;
 using namespace pr;
 
-std::vector<int> createConsistencyMatrix(vector<KeyPoint> keypoints1, vector<KeyPoint> keypoints2, vector< DMatch > matches);
-std::vector<int> Grasp(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> &consistencyMatrix);
+std::vector<int> createConsistencyMatrix(const vector<KeyPoint>& keypoints1,
+                                         const vector<KeyPoint>& keypoints2,
+                                         const vector< DMatch >& matches);
+std::vector<int> Grasp(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> &consistencyMatrix);

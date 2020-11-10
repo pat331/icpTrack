@@ -26,6 +26,7 @@ using namespace cv::xfeatures2d;
 #include "rigidBodyMotion.h"
 #include "singleValueDecomposition2D.h"
 #include "dataAssociationSURF.h"
+#include "localMap.h"
 
 #define refinement
 
@@ -65,16 +66,22 @@ int main(int argc, char *argv[]){
   string dataBikeStrike, dataBikeStrikePrewitt;
 
   cv::Mat key1, key2, key3;
+
+  Eigen::Matrix<float, 2, 2> Rtot;
+  Rtot << 1,0,0,1;
+  Eigen::Vector2f translationVectorTot;
+  translationVectorTot << 0,0;
+
   // Itero su tutti i radarscan della cartella
   for(int i = 0; i < 1; i++){
-    dataFilePng = pathRadarScanPngFiles[i];
-    dataFilePngSucc = pathRadarScanPngFiles[i+1];
-    dataFilePngSucc2 = pathRadarScanPngFiles[i+6];
+    dataFilePng = pathRadarScanPngFiles[i+1];
+    dataFilePngSucc = pathRadarScanPngFiles[i+2];
+    dataFilePngSucc2 = pathRadarScanPngFiles[i+3];
     dataBikeStrike = "/home/luca/Downloads/Bikesgray.jpg";
     dataBikeStrikePrewitt = "/home/luca/Downloads/Bikesgray_prewitt.JPG";
 
     cv::Mat cropped, croppedSucc, croppedSucc2;
-    cv::Mat cart, cartSucc;
+    cv::Mat cart, cartSucc, cartSucc2;
     cv::Mat cartFiltered;
     cv::Mat locations;   // output, locations of non-zero pixels
     cv::Mat bikeStrike;
@@ -107,32 +114,6 @@ int main(int argc, char *argv[]){
     prewittBike = prewittOperator(bikeStrike);
 
 
-    // Prova prewittOperator
-    Mat_<float> prewitt;
-    prewitt = prewittOperator(radarScanImage);
-
-    // std::string scanPrewittPolar = "scanPrewittPolar ";
-    // cv::namedWindow(scanPrewittPolar, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(scanPrewittPolar, prewitt); //show image.
-    // cv::waitKey();
-
-
-    // PRINT BICLICLETTE PREWITT ////////////////////////////////////////
-    // std::string bho = "prewitt bho ";
-    // cv::namedWindow(bho, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(bho, bikeORIGINAL); //show image.
-    // cv::waitKey();
-    //
-    // std::string bikebike = "prewitt  ";
-    // cv::namedWindow(bikebike, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(bikebike, prewittBike); //show image.
-    // cv::waitKey();
-    ///////////////////////////////////////////////////////////////////
-    // std::string radar = "scan  ";
-    // cv::namedWindow(radar, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(radar, radarScanImage); //show image.
-    // cv::waitKey();
-
 
     // getMatrixH(prewitt, SPrime);
 
@@ -160,7 +141,7 @@ int main(int argc, char *argv[]){
     int flags = INTER_LINEAR + WARP_FILL_OUTLIERS + WARP_INVERSE_MAP;
     warpPolar(provaImageSurf, cart, Size(800,800) , center, maxRadius,  flags);
 
-    Mat  provaBlur, provaBlur2,cartBlur, cartBlurSucc;
+    Mat  provaBlur, provaBlur2,cartBlur, cartBlurSucc, cartBlurSucc2;
     Mat provaBlura,provaBlurb,provaBlurc,provaBlurd;
     // blur( cart, cartBlur, Size(3,3) );
     GaussianBlur(cart,cartBlur,Size(3,3),0);
@@ -203,9 +184,15 @@ int main(int argc, char *argv[]){
     Mat prova2;
     prova2 =cropRadarScan(provaImageSurf2, 11, 0, 2000, 400);
     warpPolar(provaImageSurf2, cartSucc, Size(800,800) , center, maxRadius,  flags);
-
-    // blur( cartSucc, cartBlurSucc, Size(3,3) );
     GaussianBlur(cartSucc,cartBlurSucc,Size(3,3),0);
+
+    cv::Mat provaImageSurf3 = imread(dataFilePngSucc2, cv::IMREAD_GRAYSCALE);
+    Mat prova3;
+    prova3 =cropRadarScan(provaImageSurf3, 11, 0, 2000, 400);
+    warpPolar(provaImageSurf3, cartSucc2, Size(800,800) , center, maxRadius,  flags);
+    GaussianBlur(cartSucc2,cartBlurSucc2,Size(3,3),0);
+    // blur( cartSucc, cartBlurSucc, Size(3,3) );
+
     // GaussianBlur(cartSucc,provaBlurb,Size(3,3),0);
     // GaussianBlur(provaBlurb,provaBlurd,Size(3,3),0);
     // GaussianBlur(provaBlurd,provaBlur2,Size(3,3),0);
@@ -345,8 +332,8 @@ int main(int argc, char *argv[]){
     //-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
     int minHessian = 300;
     Ptr<SURF> detector = SURF::create( minHessian );
-    std::vector<KeyPoint> keypoints1, keypoints2;
-    Mat descriptors1, descriptors2;
+    std::vector<KeyPoint> keypoints1, keypoints2, keypoints3;
+    Mat descriptors1, descriptors2, descriptors3;
 
     detector->detectAndCompute( cartBlur, noArray(), keypoints1, descriptors1 );
     detector->detectAndCompute( cartBlurSucc, noArray(), keypoints2, descriptors2 );
@@ -365,21 +352,24 @@ int main(int argc, char *argv[]){
             good_matches.push_back(knn_matches[i][0]);
         }
     }
-    //-- Draw keypoints
-    Mat img_keypoints;
-    drawKeypoints( cartBlur, keypoints1, img_keypoints );
-    //-- Show detected (drawn) keypoints
-    imshow("SURF Keypoints", img_keypoints );
-    waitKey();
+    // -- Draw keypoints
+    // Mat mapPoints1;
+    // drawKeypoints( cartBlur, keypoints1, mapPoints1 );
+    // //-- Show detected (drawn) keypoints
+    // imshow("First map 1", mapPoints1 );
+    // waitKey();
+
+    LocalMap map;
+    map.initFirstMap(keypoints1,descriptors1);
 
     //-- Draw matches
-    Mat img_matches;
-    // drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
+    // Mat img_matches;
+    // // drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
+    // //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    // drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
     //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
-                 Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    imshow("Matches", img_matches );
-    waitKey();
+    // imshow("Matches", img_matches );
+    // waitKey();
 
     std::vector<int> maxClique;
     maxClique = createConsistencyMatrix(keypoints1, keypoints2, good_matches);
@@ -392,26 +382,80 @@ int main(int argc, char *argv[]){
       }
     }
 
-    Eigen::Matrix<float, 2, 2> R;
-    R = rigidBodyMotionSurf(keypoints1, keypoints2, ultimate_matches);
-    std::cerr << "R "<< R << '\n';
+    Eigen::Matrix<float, 2, 2> Rf;
+    Rf = rigidBodyMotionSurf(keypoints1, keypoints2, ultimate_matches);
+    Rtot = Rtot*Rf;
+
 
     Eigen::Vector2f mean1;
     mean1 = meanScanSurf1(keypoints1, ultimate_matches);
     Eigen::Vector2f mean2;
     mean2 = meanScanSurf2(keypoints2, ultimate_matches);
 
-    Eigen::Vector2f translationVector;
-    translationVector = mean2 - R * mean1;
-    std::cerr << "translation vector "<< translationVector << '\n';
+    Eigen::Vector2f translationVectorf;
+    translationVectorf = mean2 - Rf * mean1;
+    translationVectorTot += translationVectorf;
+    std::cerr << "translation vector 1 "<< translationVectorTot << '\n';
+
+
+    // map.trackLocalMap(keypoints2,descriptors2,ultimate_matches,Rtot,translationVectorTot);
+
     //-- Draw final matches
-    Mat img_matches2;
+    // Mat img_matches2;
+    // // drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, ultimate_matches, img_matches2, Scalar::all(-1),
+    // //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
     // drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, ultimate_matches, img_matches2, Scalar::all(-1),
     //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, ultimate_matches, img_matches2, Scalar::all(-1),
+    // imshow("Matches ultimate ", img_matches2 );
+    // waitKey();
+
+    /////////////////////////////////////////////////////////////////////////////
+    // Track third scan for localMap try
+    Ptr<SURF> detector2 = SURF::create( minHessian );
+    detector2->detectAndCompute( cartBlurSucc2, noArray(), keypoints3, descriptors3 );
+    Ptr<DescriptorMatcher> matcher2 = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
+    std::vector< std::vector<DMatch> > knn_matches2;
+    matcher2->knnMatch( descriptors2, descriptors3, knn_matches2, 2 );
+    std::vector<DMatch> good_matches2;
+    for (size_t i = 0; i < knn_matches2.size(); i++)
+    {
+        if (knn_matches2[i][0].distance < ratio_thresh * knn_matches2[i][1].distance)
+        {
+            good_matches2.push_back(knn_matches2[i][0]);
+        }
+    }
+    std::vector<int> maxClique2;
+    maxClique2 = createConsistencyMatrix(keypoints2, keypoints3, good_matches2);
+
+    std::vector<DMatch> ultimate_matches2;
+    for (size_t i = 0; i < good_matches2.size(); i++) {
+      if (maxClique2[i] == 1) {
+        ultimate_matches2.push_back(good_matches2[i]);
+      }
+    }
+    //-- Draw matches
+    Mat img_matches;
+    // drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
+    //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    drawMatches( cartBlurSucc, keypoints2, cartBlurSucc2, keypoints3, ultimate_matches2, img_matches, Scalar::all(-1),
                  Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    imshow("Matches ultimate ", img_matches2 );
+    imshow("Matches", img_matches );
     waitKey();
+
+    std::cerr << "ultimate_matches2 main "<< ultimate_matches2.size() << '\n';
+    Rf = rigidBodyMotionSurf(keypoints2, keypoints3, ultimate_matches2);
+    std::cerr << "Rf "<< Rf << '\n';
+    Rtot = Rtot*Rf;
+    mean1 = meanScanSurf1(keypoints2, ultimate_matches2);
+    mean2 = meanScanSurf2(keypoints3, ultimate_matches2);
+    translationVectorf = mean2 - Rf * mean1;
+    translationVectorTot += translationVectorf;
+    std::cerr << "translation vector 2 "<< translationVectorTot << '\n';
+    std::cerr << "R tot main "<< Rtot << '\n';
+
+    map.trackLocalMap(keypoints3,descriptors3, Rtot, translationVectorTot);
+    map.dispMap();
+    /////////////////////////////////////////////////////////////////////////////
 
     RGBImage local_image(img_width, img_height);
     local_image.create(img_width, img_height);
@@ -438,7 +482,7 @@ int main(int argc, char *argv[]){
 
       positionLand(0) = keypoints1[ultimate_matches[i].queryIdx].pt.x;
       positionLand(1) = keypoints1[ultimate_matches[i].queryIdx].pt.y;
-      Eigen::Vector2f transformed_point = R * positionLand + translationVector;
+      Eigen::Vector2f transformed_point = Rf * positionLand + translationVectorf;
 
       Eigen::Vector2f cartesian_point(transformed_point(0), transformed_point(1));
       transformed_scan_for_disp.push_back(cartesian_point);

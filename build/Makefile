@@ -285,6 +285,33 @@ keyPointExtraction/preProcessRadarScan.cpp.s:
 	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/keyPointExtraction/preProcessRadarScan.cpp.s
 .PHONY : keyPointExtraction/preProcessRadarScan.cpp.s
 
+localMap/localMap.o: localMap/localMap.cpp.o
+
+.PHONY : localMap/localMap.o
+
+# target to build an object file
+localMap/localMap.cpp.o:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/localMap/localMap.cpp.o
+.PHONY : localMap/localMap.cpp.o
+
+localMap/localMap.i: localMap/localMap.cpp.i
+
+.PHONY : localMap/localMap.i
+
+# target to preprocess a source file
+localMap/localMap.cpp.i:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/localMap/localMap.cpp.i
+.PHONY : localMap/localMap.cpp.i
+
+localMap/localMap.s: localMap/localMap.cpp.s
+
+.PHONY : localMap/localMap.s
+
+# target to generate assembly for a file
+localMap/localMap.cpp.s:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/localMap/localMap.cpp.s
+.PHONY : localMap/localMap.cpp.s
+
 rigidBodyMotion/rigidBodyMotion.o: rigidBodyMotion/rigidBodyMotion.cpp.o
 
 .PHONY : rigidBodyMotion/rigidBodyMotion.o
@@ -447,6 +474,9 @@ help:
 	@echo "... keyPointExtraction/preProcessRadarScan.o"
 	@echo "... keyPointExtraction/preProcessRadarScan.i"
 	@echo "... keyPointExtraction/preProcessRadarScan.s"
+	@echo "... localMap/localMap.o"
+	@echo "... localMap/localMap.i"
+	@echo "... localMap/localMap.s"
 	@echo "... rigidBodyMotion/rigidBodyMotion.o"
 	@echo "... rigidBodyMotion/rigidBodyMotion.i"
 	@echo "... rigidBodyMotion/rigidBodyMotion.s"

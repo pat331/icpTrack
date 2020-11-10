@@ -39,6 +39,7 @@ include_directories(dataAssociation)
 include_directories(rigidBodyMotion)
 include_directories(fft-real/src)
 include_directories(dataAssociationSURF)
+include_directories(localMap)
 
 
 
@@ -53,6 +54,7 @@ add_executable(radarTest ${SOURCES}
         ../rigidBodyMotion/singleValueDecomposition2D.cpp
         ../rigidBodyMotion/rigidBodyMotion.cpp
         ../dataAssociationSURF/dataAssociationSURF.cpp
+        ../localMap/localMap.cpp
 
 
 )

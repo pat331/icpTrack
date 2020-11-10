@@ -17,7 +17,10 @@ using namespace std;
 using namespace cv;
 using namespace pr;
 
-std::vector<int> createConsistencyMatrix(vector<KeyPoint> keypoints1, vector<KeyPoint> keypoints2, vector< DMatch > matches){
+std::vector<int> createConsistencyMatrix(const vector<KeyPoint>& keypoints1,
+                                         const vector<KeyPoint>& keypoints2,
+                                         const vector< DMatch >& matches){
+
   float deltaC = 3; // Can be much smaller
   float distanceOnScan1;
   float distanceOnScan2;
@@ -41,16 +44,18 @@ std::vector<int> createConsistencyMatrix(vector<KeyPoint> keypoints1, vector<Key
       }
     }
   }
+  // std::cerr << "consistencyMatrix "<<consistencyMatrix << '\n';
   std::vector<int> clique;
   clique = Grasp(consistencyMatrix);
   for (size_t i = 0; i < clique.size(); i++) {
+
   }
 
   return clique;
 
 }
 
-std::vector<int> Grasp(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> &consistencyMatrix){
+std::vector<int> Grasp(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> &consistencyMatrix){
   std::vector<int> Q(consistencyMatrix.cols(),0); // Initiale clique
   std::vector<int> C(consistencyMatrix.cols(),1); // Initially all the verteces are candidate.
 
@@ -73,10 +78,10 @@ std::vector<int> Grasp(Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> &con
           d += consistencyMatrix(i,j);
         }
         grades[i] = d;
-        if (d > dMax) {
+        if (d >= dMax) {
           dMax = d;
         }
-        if (d < dMin) {
+        if (d <= dMin) {
           dMin = d;
         }
       }
