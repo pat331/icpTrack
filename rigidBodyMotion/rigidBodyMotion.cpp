@@ -32,7 +32,7 @@ Eigen::Matrix<float, 2, 2> rigidBodyMotionSurf(vector<KeyPoint> keypoints1,
   // Ricorda che la cross crossCorrelationMatrix va fatta solo delle associazioni approvate dal greedyAlgorithm
   Eigen::Matrix<float, 2, 2> crossCorrelationMatrix = computeCrossCorrelationMatrixSurf(xPrimeVector,
                                                                                         yPrimeVector);
-  std::cerr << "crossCorrelationMatrix "<< crossCorrelationMatrix << '\n';
+  // std::cerr << "crossCorrelationMatrix "<< crossCorrelationMatrix << '\n';
   //Computation of singularValueDecomposition2D
   // Eigen::Matrix<float, 2, 2> U = computationOfU(crossCorrelationMatrix(0,0),
   //                                               crossCorrelationMatrix(0,1),
@@ -50,8 +50,8 @@ Eigen::Matrix<float, 2, 2> rigidBodyMotionSurf(vector<KeyPoint> keypoints1,
   // PROVA CON EIGEN SVD
   Eigen::JacobiSVD<Eigen::MatrixXf> svd(crossCorrelationMatrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
   // cout << "Its singular values are:" << endl << svd.singularValues() << endl;
-  cout << "Its left singular vectors are the columns of the thin U matrix:" << endl << svd.matrixU() << endl;
-  cout << "Its right singular vectors are the columns of the thin V matrix:" << endl << svd.matrixV() << endl;
+  // cout << "Its left singular vectors are the columns of the thin U matrix:" << endl << svd.matrixU() << endl;
+  // cout << "Its right singular vectors are the columns of the thin V matrix:" << endl << svd.matrixV() << endl;
   //////////////////////////////////////////////////////////////////////////////
   Eigen::Matrix<float, 2, 2> R = svd.matrixU() * svd.matrixV().transpose();
   return R;
@@ -63,9 +63,9 @@ Eigen::Matrix<float, 2, 2> rigidBodyMotion(VectorOfDescriptorVector &descriptor1
                                            Eigen::Matrix<float, 1, Eigen::Dynamic> optimizedAssociationSolution){
 
   Eigen::Vector2f meanFirstScan = meanScan(descriptor1);
-  std::cerr << "meanFirstScan "<< meanFirstScan << '\n';
+  // std::cerr << "meanFirstScan "<< meanFirstScan << '\n';
   Eigen::Vector2f meanSecondScan = meanScan(descriptor2);
-  std::cerr << "meanSecondScan "<< meanSecondScan << '\n';
+  // std::cerr << "meanSecondScan "<< meanSecondScan << '\n';
 
   Vector2fVector xPrimeVector = positionPrime(descriptor1, meanFirstScan);
   Vector2fVector yPrimeVector = positionPrime(descriptor2, meanSecondScan);
@@ -75,7 +75,7 @@ Eigen::Matrix<float, 2, 2> rigidBodyMotion(VectorOfDescriptorVector &descriptor1
                                                                                     yPrimeVector,
                                                                                     matchProposal,
                                                                                     optimizedAssociationSolution);
-  std::cerr << "crossCorrelationMatrix "<< crossCorrelationMatrix << '\n';
+  // std::cerr << "crossCorrelationMatrix "<< crossCorrelationMatrix << '\n';
   //Computation of singularValueDecomposition2D
   Eigen::Matrix<float, 2, 2> U = computationOfU(crossCorrelationMatrix(0,0),
                                                 crossCorrelationMatrix(0,1),
@@ -93,8 +93,8 @@ Eigen::Matrix<float, 2, 2> rigidBodyMotion(VectorOfDescriptorVector &descriptor1
   // PROVA CON EIGEN SVD
   Eigen::JacobiSVD<Eigen::MatrixXf> svd(crossCorrelationMatrix, Eigen::ComputeThinU | Eigen::ComputeThinV);
   // cout << "Its singular values are:" << endl << svd.singularValues() << endl;
-  cout << "Its left singular vectors are the columns of the thin U matrix:" << endl << svd.matrixU() << endl;
-  cout << "Its right singular vectors are the columns of the thin V matrix:" << endl << svd.matrixV() << endl;
+  // cout << "Its left singular vectors are the columns of the thin U matrix:" << endl << svd.matrixU() << endl;
+  // cout << "Its right singular vectors are the columns of the thin V matrix:" << endl << svd.matrixV() << endl;
   //////////////////////////////////////////////////////////////////////////////
   Eigen::Matrix<float, 2, 2> R = svd.matrixU() * svd.matrixV().transpose();
   return R;
@@ -199,9 +199,9 @@ Eigen::Vector2f meanScan(VectorOfDescriptorVector &descriptor){
     sumPositionX += descriptor[i](0);
     sumPositionY += descriptor[i](1);
   }
-  std::cerr << "sumPositionX "<< sumPositionX << '\n';
-  std::cerr << "sumPositionY "<< sumPositionY << '\n';
-  std::cerr << "descriptor size "<< descriptor.size() << '\n';
+  // std::cerr << "sumPositionX "<< sumPositionX << '\n';
+  // std::cerr << "sumPositionY "<< sumPositionY << '\n';
+  // std::cerr << "descriptor size "<< descriptor.size() << '\n';
   sumPositionX = sumPositionX / (int) descriptor.size();
   sumPositionY = sumPositionY / (int) descriptor.size();
   // sumPositionX = sumPositionX/divisor;

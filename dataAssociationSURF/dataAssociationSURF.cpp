@@ -21,7 +21,7 @@ std::vector<int> createConsistencyMatrix(const vector<KeyPoint>& keypoints1,
                                          const vector<KeyPoint>& keypoints2,
                                          const vector< DMatch >& matches){
 
-  float deltaC = 3; // Can be much smaller
+  float deltaC = 1.5; // Can be much smaller
   float distanceOnScan1;
   float distanceOnScan2;
   Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> consistencyMatrix;

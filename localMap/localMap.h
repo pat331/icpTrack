@@ -34,6 +34,10 @@ class LocalMap{
                   const Eigen::Matrix<float, 2, 2>& RotationMatrix,
                   const Eigen::Vector2f& translationVector);
 
+    void insertKeyFrame(const std::vector<KeyPoint>& keyFrame,
+                        const Eigen::Matrix<float, 2, 2>& R,
+                        const Eigen::Vector2f& t);
+
 
   protected:
 

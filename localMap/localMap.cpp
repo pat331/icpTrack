@@ -36,13 +36,13 @@ void LocalMap::initFirstMap(const std::vector<KeyPoint>& keypoints, const Mat& d
 
 void LocalMap::dispMap(){
 
-  RGBImage local_image(800, 800);
-  local_image.create(800, 800);
+  RGBImage local_image(1500, 1500);
+  local_image.create(1500, 1500);
   local_image=cv::Vec3b(255,255,255);
   std::vector<KeyPoint> keyForDisp = _mapPoint;
   for (size_t i = 0; i < _mapPoint.size(); i++) {
-    keyForDisp[i].pt.x = _mapPoint[i].pt.x ;
-    keyForDisp[i].pt.y = _mapPoint[i].pt.y ;
+    keyForDisp[i].pt.x = _mapPoint[i].pt.x*1.4;
+    keyForDisp[i].pt.y = _mapPoint[i].pt.y*1.4;
   }
   Mat mapPoints;
   drawKeypoints( local_image, keyForDisp, mapPoints );
@@ -109,38 +109,6 @@ void LocalMap::mergeMap(const std::vector<KeyPoint>& keyFrame,
                         const Eigen::Matrix<float, 2, 2>& RotationMatrix,
                         const Eigen::Vector2f& translationVector){
 
-  std::cerr << "translationVector in merge"<< translationVector << '\n';
-  std::cerr << "Rotation matrix in merge "<< RotationMatrix << '\n';
-  // Trasformare i punti nel riferimento della mappa
-  /////////////////////////////////////////////////////////////////////////////////////
-  /////////////////////////////////////////////////////////////////////////////////////
-  // std::vector<KeyPoint> mapPointToTrasform = _mapPoint; //mappa
-  // std::vector<KeyPoint> keyFrameTrasformed = keyFrame; //frame
-  // Eigen::Vector2f rotatedPoint;
-  // Eigen::Vector2f rotatedTranslation;
-  // rotatedTranslation << translationVector(0)+0, translationVector(1)+0;
-  // for (size_t i = 0; i < keyFrame.size(); i++) {
-  //   rotatedPoint << mapPointToTrasform[i].pt.x, mapPointToTrasform[i].pt.y;
-  //   // rotatedTranslation << RotationMatrix.inverse()*translationVector;
-  //   rotatedPoint = RotationMatrix*rotatedPoint;
-  //   // keyFrameTrasformed[i].pt.x = rotatedPoint(0) - rotatedTranslation(0);
-  //   // keyFrameTrasformed[i].pt.y = rotatedPoint(1) - rotatedTranslation(1);
-  //   mapPointToTrasform[i].pt.x = rotatedPoint(0) + rotatedTranslation(0);
-  //   mapPointToTrasform[i].pt.y = rotatedPoint(1) + rotatedTranslation(1);
-  // }
-  // float meanPosX;
-  // float meanPosY;
-  // for (size_t i = 0; i < matchesForMerge.size(); i++) {
-  //   meanPosX = (mapPointToTrasform[matchesForMerge[i].queryIdx].pt.x + keyFrame[matchesForMerge[i].trainIdx].pt.x)/2;
-  //   meanPosY = (mapPointToTrasform[matchesForMerge[i].queryIdx].pt.y + keyFrame[matchesForMerge[i].trainIdx].pt.y)/2;
-  //   _mapPoint[matchesForMerge[i].trainIdx].pt.x = meanPosX;
-  //   _mapPoint[matchesForMerge[i].trainIdx].pt.y = meanPosY;
-  //   std::cerr << "entro dentro merge map " << '\n';
-  //   std::cerr << "diff on x " << mapPointToTrasform[matchesForMerge[i].queryIdx].pt.x - keyFrame[matchesForMerge[i].trainIdx].pt.x << '\n';
-  //   std::cerr << "diff on y " << mapPointToTrasform[matchesForMerge[i].queryIdx].pt.y - keyFrame[matchesForMerge[i].trainIdx].pt.y << '\n';
-  // }
-////////////////////////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////////////////////////
   std::vector<KeyPoint> keyFrameTrasformed = keyFrame;
   Eigen::Vector2f rotatedPoint;
   Eigen::Vector2f rotatedTranslation;
@@ -166,3 +134,19 @@ void LocalMap::mergeMap(const std::vector<KeyPoint>& keyFrame,
   }
 
                           }
+
+void LocalMap::insertKeyFrame(const std::vector<KeyPoint>& keyFrame,
+                    const Eigen::Matrix<float, 2, 2>& R,
+                    const Eigen::Vector2f& t){
+
+    Eigen::Vector2f pointInFrameCoord;
+    Eigen::Vector2f trasformedPoint;
+    std::vector<KeyPoint> trasformedKeyPoint = keyFrame;
+    for (size_t i = 0; i < keyFrame.size(); i++) {
+      pointInFrameCoord << keyFrame[i].pt.x, keyFrame[i].pt.y;
+      trasformedPoint = R*pointInFrameCoord + t;
+      trasformedKeyPoint[i].pt.x = trasformedPoint(0);
+      trasformedKeyPoint[i].pt.y = trasformedPoint(1);
+      _mapPoint.push_back(trasformedKeyPoint[i]);
+    }
+                    }
