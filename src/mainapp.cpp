@@ -91,7 +91,7 @@ int main(int argc, char *argv[]){
   translationVectorTot << 0,0;
   // Itero su tutti i radarscan della cartella
   LocalMap map;
-  for(int i = 0; i < 47; i++){
+  for(int i = 0; i < 10; i++){
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];
     dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
@@ -377,8 +377,12 @@ int main(int argc, char *argv[]){
     // imshow("First map 1", mapPoints1 );
     // waitKey();
 
-
-    map.initFirstMap(keypoints1,descriptors1);
+    if (i==0) {
+      map.initFirstMap(keypoints1,descriptors1);
+      // map.dispMap();
+      R1.setIdentity();
+    }
+    // map.initFirstMap(keypoints1,descriptors1);
 
     //-- Draw matches
     // Mat img_matches;
@@ -402,7 +406,9 @@ int main(int argc, char *argv[]){
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     Eigen::Matrix<float, 2, 2> Rf;
+
     Rf = rigidBodyMotionSurf(keypoints1, keypoints2, ultimate_matches); // questa è la rotazione che porta da ref1->ref2
+    std::cerr << "Rf "<<Rf << '\n';
     // Rtot = Rtot*Rf;
     Eigen::Vector2f mean1;
     mean1 = meanScanSurf1(keypoints1, ultimate_matches);
@@ -413,14 +419,20 @@ int main(int argc, char *argv[]){
     Eigen::Vector2f translationVectorf;
     translationVectorf = mean2 - Rf * mean1;
     // translationVectorTot += translationVectorf;
-
+    std::cerr << "R1 "<<R1 << '\n';
     R2 = Rf.inverse();
+    std::cerr << "R2 "<< R2 << '\n';
     t2 = -R2*translationVectorf;
+    std::cerr << "t2 "<< t2 << '\n';
     Rtot = R1*R2;
+    std::cerr << "Rtot "<< Rtot << '\n';
     translationVectorTot = R1*t2+t1;
+    std::cerr << "translationVectorTot "<< t1 << '\n';
     R1 = Rtot;
     t1 = translationVectorTot;
-    map.insertKeyFrame(keypoints2,Rtot,translationVectorTot);
+
+
+    map.insertKeyFrame(keypoints2,descriptors2,Rtot,translationVectorTot);
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // map.trackLocalMap(keypoints2,descriptors2,ultimate_matches,Rtot,translationVectorTot);
 

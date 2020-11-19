@@ -17,6 +17,7 @@
 using namespace cv;
 using namespace std;
 using namespace cv::xfeatures2d;
+using namespace pr;
 
 LocalMap::LocalMap(){
   _originImage(0) = 0;
@@ -39,15 +40,17 @@ void LocalMap::dispMap(){
   RGBImage local_image(1500, 1500);
   local_image.create(1500, 1500);
   local_image=cv::Vec3b(255,255,255);
+  Vector2fVector provaDisp;
   std::vector<KeyPoint> keyForDisp = _mapPoint;
   for (size_t i = 0; i < _mapPoint.size(); i++) {
-    keyForDisp[i].pt.x = _mapPoint[i].pt.x*1.4;
-    keyForDisp[i].pt.y = _mapPoint[i].pt.y*1.4;
+    Eigen::Vector2f disp;
+    disp(0) = _mapPoint[i].pt.x*0.8;
+    disp(1) = _mapPoint[i].pt.y*0.8;
+    provaDisp.push_back(disp);
   }
-  Mat mapPoints;
-  drawKeypoints( local_image, keyForDisp, mapPoints );
-  //-- Show detected (drawn) keypoints
-  imshow("First map", mapPoints );
+
+  drawPoints(local_image, provaDisp, cv::Scalar(255,0,0),1);
+  cv::imshow("Scan matcher", local_image);
   waitKey();
 }
 
@@ -136,9 +139,10 @@ void LocalMap::mergeMap(const std::vector<KeyPoint>& keyFrame,
                           }
 
 void LocalMap::insertKeyFrame(const std::vector<KeyPoint>& keyFrame,
+                    const Mat& descriptorsFrame,
                     const Eigen::Matrix<float, 2, 2>& R,
                     const Eigen::Vector2f& t){
-
+    std::cerr << "number of map point"<< _mapPoint.size() << '\n';
     Eigen::Vector2f pointInFrameCoord;
     Eigen::Vector2f trasformedPoint;
     std::vector<KeyPoint> trasformedKeyPoint = keyFrame;
@@ -148,5 +152,7 @@ void LocalMap::insertKeyFrame(const std::vector<KeyPoint>& keyFrame,
       trasformedKeyPoint[i].pt.x = trasformedPoint(0);
       trasformedKeyPoint[i].pt.y = trasformedPoint(1);
       _mapPoint.push_back(trasformedKeyPoint[i]);
+      Mat newRow = descriptorsFrame.row(i);
+      _mapPointDescriptors.push_back(newRow);
     }
                     }

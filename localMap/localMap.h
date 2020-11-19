@@ -7,6 +7,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv/highgui.h>
 #include "dataAssociationSURF.h"
+#include "points_utils.h"
 #include "defs.h"
 
 using namespace cv;
@@ -35,6 +36,7 @@ class LocalMap{
                   const Eigen::Vector2f& translationVector);
 
     void insertKeyFrame(const std::vector<KeyPoint>& keyFrame,
+                        const Mat& descriptorsFrame,
                         const Eigen::Matrix<float, 2, 2>& R,
                         const Eigen::Vector2f& t);
 
