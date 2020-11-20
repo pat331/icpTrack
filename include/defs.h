@@ -248,4 +248,9 @@ namespace pr {
   typedef std::pair<int,int> IntPair;
   typedef std::vector<IntPair > IntPairVector;
 
+  typedef struct{
+    Eigen::Matrix<float, 2, 2> R;
+    Eigen::Vector2f t;
+  }SE2;
+
 }

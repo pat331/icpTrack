@@ -185,6 +185,8 @@ dataAssociationSURF.h
 ../localMap/dataAssociationSURF.h
 points_utils.h
 ../localMap/points_utils.h
+rigidBodyMotion.h
+../localMap/rigidBodyMotion.h
 defs.h
 ../localMap/defs.h
 
@@ -539,6 +541,8 @@ dataAssociationSURF.h
 /home/luca/Documents/tesi/icpTrack/localMap/dataAssociationSURF.h
 points_utils.h
 /home/luca/Documents/tesi/icpTrack/localMap/points_utils.h
+rigidBodyMotion.h
+/home/luca/Documents/tesi/icpTrack/localMap/rigidBodyMotion.h
 defs.h
 /home/luca/Documents/tesi/icpTrack/localMap/defs.h
 

@@ -8,6 +8,7 @@
 #include <opencv/highgui.h>
 #include "dataAssociationSURF.h"
 #include "points_utils.h"
+#include "rigidBodyMotion.h"
 #include "defs.h"
 
 using namespace cv;
@@ -25,10 +26,16 @@ class LocalMap{
 
     void dispMap();
 
-    void trackLocalMap(const std::vector<KeyPoint>& keypointsFrame,
+    std::vector<DMatch> matchingWithMap(const std::vector<KeyPoint>& keypointsFrame,
+                                        const Mat& descriptorsFrame);
+
+    SE2 trackLocalMap(const std::vector<KeyPoint>& keypointsFrame1,
+                       const Mat& descriptorsFrame1,
+                       const std::vector<KeyPoint>& keypointsFrame,
                        const Mat& descriptorsFrame,
-                       const Eigen::Matrix<float, 2, 2>& RotationMatrix,
-                       const Eigen::Vector2f& translationVector);
+                       const SE2 scanMotion,
+                       const std::vector<DMatch>& matchWithMap,
+                       const std::vector<int>& associatedLandmarkIndex);
 
     void mergeMap(const std::vector<KeyPoint>& keyFrame,
                   const std::vector<DMatch>& matchesForMerge,
@@ -40,12 +47,17 @@ class LocalMap{
                         const Eigen::Matrix<float, 2, 2>& R,
                         const Eigen::Vector2f& t);
 
+    void robotMotion(const SE2& robMotion);
+
 
   protected:
 
     std::vector<KeyPoint> _mapPoint;
     Mat _mapPointDescriptors;
     Eigen::Vector2f _originImage;
+    int numeroDescrittori;
+    int numeroScan;
+    Vector2fVector _robotPose;
 
 
 

@@ -90,8 +90,9 @@ int main(int argc, char *argv[]){
   Eigen::Vector2f t2;
   translationVectorTot << 0,0;
   // Itero su tutti i radarscan della cartella
-  LocalMap map;
-  for(int i = 0; i < 10; i++){
+  SE2 motion;
+  LocalMap map, map1;
+  for(int i = 0; i < 30; i++){
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];
     dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
@@ -157,58 +158,26 @@ int main(int argc, char *argv[]){
     double maxRadius = 400.0;
     Point2f center( 400, 400);
     int flags = INTER_LINEAR + WARP_FILL_OUTLIERS + WARP_INVERSE_MAP;
-    warpPolar(provaImageSurf, cart, Size(800,800) , center, maxRadius,  flags);
-
+    warpPolar(prova, cart, Size(800,800) , center, maxRadius,  flags);
+    threshold( cart, cart, 65, 255, 3 );
     Mat  provaBlur, provaBlur2,cartBlur, cartBlurSucc, cartBlurSucc2;
     Mat provaBlura,provaBlurb,provaBlurc,provaBlurd;
     blur( cart, cartBlur, Size(3,3) );
     // GaussianBlur(cart,cartBlur,Size(3,3),0);
-    // GaussianBlur(cart,provaBlura,Size(3,3),0);
-    // GaussianBlur(provaBlura,provaBlurc,Size(3,3),0);
-    // GaussianBlur(provaBlurc,provaBlur,Size(3,3),0);
-    // GaussianBlur(provaBlur,cartBlur,Size(3,3),0);
 
-    // const String window_name = "Sobel Demo - Simple Edge Detector";
-    // int ksize = 3;
-    // // int ksize = CV_SCHARR;
-    // int scale = 1;
-    // int delta = 0;
-    // int ddepth = CV_16S;
-    // Mat grad_x, grad_y;
-    // Mat abs_grad_x, abs_grad_y;
-    // Mat grad, grad2;
-    // Sobel(provaBlura, grad_x, ddepth, 1, 0, ksize, scale, delta, BORDER_DEFAULT);
-    // Sobel(provaBlura, grad_y, ddepth, 0, 1, ksize, scale, delta, BORDER_DEFAULT);
-    // // converting back to CV_8U
-    // convertScaleAbs(grad_x, abs_grad_x);
-    // convertScaleAbs(grad_y, abs_grad_y);
-    // addWeighted(abs_grad_x, 0.5, abs_grad_y, 0.5, 0, cartBlur);
-
-
-
-    //
-    // int minHessian = 1500;
-    // Ptr<SURF> detector = SURF::create( minHessian );
-    // std::vector<KeyPoint> keypoints;
-    // detector->detect( cart, keypoints );
-    // //-- Draw keypoints
-    // Mat img_keypoints;
-    // drawKeypoints( cart, keypoints, img_keypoints );
-    // //-- Show detected (drawn) keypoints
-    // imshow("SURF Keypoints", img_keypoints );
-    //
-    //
     cv::Mat provaImageSurf2 = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
     Mat prova2;
     prova2 =cropRadarScan(provaImageSurf2, 11, 0, 2000, 400);
-    warpPolar(provaImageSurf2, cartSucc, Size(800,800) , center, maxRadius,  flags);
+    warpPolar(prova2, cartSucc, Size(800,800) , center, maxRadius,  flags);
     // GaussianBlur(cartSucc,cartBlurSucc,Size(3,3),0);
+    threshold( cartSucc, cartSucc, 65, 255, 3 );
     blur( cartSucc, cartBlurSucc, Size(3,3) );
     cv::Mat provaImageSurf3 = imread(dataFilePngSucc2, cv::IMREAD_GRAYSCALE);
     Mat prova3;
     prova3 =cropRadarScan(provaImageSurf3, 11, 0, 2000, 400);
-    warpPolar(provaImageSurf3, cartSucc2, Size(800,800) , center, maxRadius,  flags);
+    warpPolar(prova3, cartSucc2, Size(800,800) , center, maxRadius,  flags);
     // GaussianBlur(cartSucc2,cartBlurSucc2,Size(3,3),0);
+    threshold( cartSucc2, cartSucc2, 65, 255, 3 );
     blur( cartSucc2, cartBlurSucc2, Size(3,3) );
 
     // GaussianBlur(cartSucc,provaBlurb,Size(3,3),0);
@@ -370,17 +339,20 @@ int main(int argc, char *argv[]){
             good_matches.push_back(knn_matches[i][0]);
         }
     }
-    // -- Draw keypoints
-    // Mat mapPoints1;
-    // drawKeypoints( cartBlur, keypoints1, mapPoints1 );
-    // //-- Show detected (drawn) keypoints
-    // imshow("First map 1", mapPoints1 );
-    // waitKey();
+    // if (i==0) {
+    //   Mat mapPoints1;
+    //   drawKeypoints( cartBlur, keypoints1, mapPoints1 );
+    //   //-- Show detected (drawn) keypoints
+    //   imshow("First map 1", mapPoints1 );
+    //   waitKey();
+    // }
+
 
     if (i==0) {
       map.initFirstMap(keypoints1,descriptors1);
-      // map.dispMap();
+      map1.initFirstMap(keypoints1,descriptors1);
       R1.setIdentity();
+      t1 << 0,0;
     }
     // map.initFirstMap(keypoints1,descriptors1);
 
@@ -403,13 +375,15 @@ int main(int argc, char *argv[]){
         ultimate_matches.push_back(good_matches[i]);
       }
     }
+    std::cerr << "ultimate_matches SCAN SCAN "<<ultimate_matches.size() << '\n';
 
+// PARTE FUNZIONANTE PER LA CREAZIONE DELLA MAPPA
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+std::cerr << "++++++++++++++++++++++++++++++++++++" << '\n';
     Eigen::Matrix<float, 2, 2> Rf;
 
     Rf = rigidBodyMotionSurf(keypoints1, keypoints2, ultimate_matches); // questa è la rotazione che porta da ref1->ref2
-    std::cerr << "Rf "<<Rf << '\n';
-    // Rtot = Rtot*Rf;
     Eigen::Vector2f mean1;
     mean1 = meanScanSurf1(keypoints1, ultimate_matches);
     Eigen::Vector2f mean2;
@@ -418,21 +392,45 @@ int main(int argc, char *argv[]){
 
     Eigen::Vector2f translationVectorf;
     translationVectorf = mean2 - Rf * mean1;
-    // translationVectorTot += translationVectorf;
-    std::cerr << "R1 "<<R1 << '\n';
+    SE2 robMotion;
+    robMotion.R = Rf;
+    robMotion.t = translationVectorf;
+    map1.robotMotion(robMotion);
+    map.robotMotion(robMotion);
+
     R2 = Rf.inverse();
-    std::cerr << "R2 "<< R2 << '\n';
     t2 = -R2*translationVectorf;
-    std::cerr << "t2 "<< t2 << '\n';
     Rtot = R1*R2;
-    std::cerr << "Rtot "<< Rtot << '\n';
     translationVectorTot = R1*t2+t1;
-    std::cerr << "translationVectorTot "<< t1 << '\n';
     R1 = Rtot;
     t1 = translationVectorTot;
 
 
     map.insertKeyFrame(keypoints2,descriptors2,Rtot,translationVectorTot);
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    std::cerr << "################################" << '\n';
+    if (i==0) {
+      motion.R.setIdentity();
+      motion.t << 0,0;
+    }
+
+
+    std::vector<DMatch> matchWithMap;
+    matchWithMap = map1.matchingWithMap(keypoints2,descriptors2);
+    std::vector<int> indexLandmarkAssociated(keypoints2.size(),0);
+    for (size_t i = 0; i < matchWithMap.size(); i++) {
+      indexLandmarkAssociated[matchWithMap[i].trainIdx] = 1;
+    }
+    std::cerr << "/* matchingWithMap size  */ "<< matchWithMap.size() << '\n';
+    float check =0;
+    for (size_t i = 0; i < indexLandmarkAssociated.size(); i++) {
+      check+=indexLandmarkAssociated[i];
+    }
+    std::cerr << "check "<< check << '\n';
+
+    motion = map1.trackLocalMap(keypoints1,descriptors1,keypoints2,descriptors2,motion,matchWithMap,indexLandmarkAssociated);
+
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // map.trackLocalMap(keypoints2,descriptors2,ultimate_matches,Rtot,translationVectorTot);
 
@@ -533,6 +531,7 @@ int main(int argc, char *argv[]){
 
   }
   map.dispMap();
+  map1.dispMap();
   return 0;
 
 
