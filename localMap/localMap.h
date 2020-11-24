@@ -47,17 +47,29 @@ class LocalMap{
                         const Eigen::Matrix<float, 2, 2>& R,
                         const Eigen::Vector2f& t);
 
+    void insertKeyFrame2(const std::vector<KeyPoint>& keyFrame,
+                        const Mat& descriptorsFrame,
+                        const Eigen::Matrix<float, 2, 2>& R,
+                        const Eigen::Vector2f& t);
+
     void robotMotion(const SE2& robMotion);
+
+    void clipMap();
 
 
   protected:
 
     std::vector<KeyPoint> _mapPoint;
     Mat _mapPointDescriptors;
+    std::vector<KeyPoint> _partialMap;
+    Mat _partialDescriptors;
+    std::vector<int> _mapPointAssociated;
+
     Eigen::Vector2f _originImage;
     int numeroDescrittori;
     int numeroScan;
     Vector2fVector _robotPose;
+    SE2 motionPrec;
 
 
 

@@ -24,11 +24,21 @@ LocalMap::LocalMap(){
   _originImage(1) = 0;
   numeroDescrittori = 0;
   numeroScan = 0;
+  motionPrec.R.setIdentity();
+  motionPrec.t << 0,0;
+
 }
 
 void LocalMap::initFirstMap(const std::vector<KeyPoint>& keypoints, const Mat& descriptors){
   _mapPoint = keypoints; // Hold the map
   _mapPointDescriptors= descriptors;
+  // Reserve space in _mapPointAssociated
+  _mapPointAssociated.reserve(keypoints.size());
+  //initialize the vector for association
+  for (size_t i = 0; i < keypoints.size(); i++) {
+    _mapPointAssociated.push_back(0);
+  }
+
   numeroDescrittori += keypoints.size();
   numeroScan = 1;
   // Bring the origin to (0,0)
@@ -54,7 +64,10 @@ void LocalMap::dispMap(){
     Eigen::Vector2f disp;
     disp(0) = _mapPoint[i].pt.x*1;
     disp(1) = _mapPoint[i].pt.y*1;
-    provaDisp.push_back(disp);
+    if (_mapPointAssociated[i]>1) {
+      provaDisp.push_back(disp);
+    }
+    // provaDisp.push_back(disp);
   }
 
   drawPoints(local_image, provaDisp, cv::Scalar(255,0,0),1);
@@ -102,6 +115,13 @@ SE2 LocalMap::trackLocalMap(const std::vector<KeyPoint>& keypointsFrame1,
                              const std::vector<DMatch>& matchWithMap,
                              const std::vector<int>& associatedLandmarkIndex){
 
+  // Reserve space for association vector
+  _mapPointAssociated.reserve(keypointsFrame.size());
+  //initialize the vector for association
+  for (size_t i = 0; i < keypointsFrame.size(); i++) {
+    _mapPointAssociated.push_back(0);
+  }
+
   // std::vector<KeyPoint> clippedKeypoints;
   // Mat clippedDescriptors;
    numeroScan += 1;
@@ -120,40 +140,31 @@ SE2 LocalMap::trackLocalMap(const std::vector<KeyPoint>& keypointsFrame1,
   //    clippedDescriptors = descriptorsFrame1;
   //
   //  }
-
-    Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
-    std::vector< std::vector<DMatch> > knn_matches;
-    matcher->knnMatch( descriptorsFrame1, descriptorsFrame, knn_matches, 2 );
-    //-- Filter matches using the Lowe's ratio test
-    const float ratio_thresh = 0.7f;
-    std::vector<DMatch> good_matches;
-    for (size_t i = 0; i < knn_matches.size(); i++)
-    {
-        if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
-        {
-            good_matches.push_back(knn_matches[i][0]);
-        }
+  // Prima prova per clip facile ( tronco dopo i primi mille keypoint)
+  if (numeroScan >= 5) {
+    _partialMap.clear();
+    _partialDescriptors = Mat();
+    for (int i = 0; i < 1200; i++) {
+      _partialMap.push_back(_mapPoint[_mapPoint.size()-1-i]);
+      Mat newRow = _mapPointDescriptors.row(_mapPoint.size()-1-i);
+      _partialDescriptors.push_back(newRow);
     }
-
-
-    std::vector<int> maxClique;
-    maxClique = createConsistencyMatrix(keypointsFrame1, keypointsFrame, good_matches);
-    // maxClique = createConsistencyMatrix(keypoints_object, keypoints_scene, good_matchesORB);
-
-    std::vector<DMatch> ultimate_matches;
-    for (size_t i = 0; i < good_matches.size(); i++) {
-      if (maxClique[i] == 1) {
-        ultimate_matches.push_back(good_matches[i]);
-      }
-    }
-
-
-
+  }
+  // if (numeroScan >= 5) {
+  //
+  // } else {
+  //
+  // }
   Ptr<DescriptorMatcher> matcher2 = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
   std::vector< std::vector<DMatch> > knn_matches2;
-  matcher2->knnMatch( _mapPointDescriptors, descriptorsFrame, knn_matches2, 2 );
+  if (numeroScan >= 5) {
+    matcher2->knnMatch( _partialDescriptors, descriptorsFrame, knn_matches2, 2 );
+  } else {
+    matcher2->knnMatch( _mapPointDescriptors, descriptorsFrame, knn_matches2, 2 );
+  }
+  // matcher2->knnMatch( _mapPointDescriptors, descriptorsFrame, knn_matches2, 2 );
   //-- Filter matches using the Lowe's ratio test
-  // const float ratio_thresh = 0.7f;
+  const float ratio_thresh = 0.7f;
   std::vector<DMatch> good_matches2;
   for (size_t i = 0; i < knn_matches2.size(); i++)
   {
@@ -167,7 +178,6 @@ SE2 LocalMap::trackLocalMap(const std::vector<KeyPoint>& keypointsFrame1,
   Eigen::Vector2f trasformed;
   Eigen::Vector2f frameCoord;
 
-
   for (size_t i = 0; i < keypointsFrame.size(); i++) {
     // if (associatedLandmarkIndex[i] == 0) {
       frameCoord << keypointsFrame[i].pt.x, keypointsFrame[i].pt.y;
@@ -179,101 +189,53 @@ SE2 LocalMap::trackLocalMap(const std::vector<KeyPoint>& keypointsFrame1,
   }
 
   std::vector<int> maxClique2;
-  maxClique2 = createConsistencyMatrix(_mapPoint, prova, good_matches2);
-  // maxClique = createConsistencyMatrix(keypoints_object, keypoints_scene, good_matchesORB);
-  // const float ratio_thresh = 0.7f;
+  if (numeroScan >= 5) {
+    maxClique2 = createConsistencyMatrix(_partialMap, prova, good_matches2);
+  } else {
+    maxClique2 = createConsistencyMatrix(_mapPoint, prova, good_matches2);
+  }
+  // maxClique2 = createConsistencyMatrix(_mapPoint, prova, good_matches2);
   std::vector<DMatch> ultimate_matches2;
   for (size_t i = 0; i < good_matches2.size(); i++) {
     if (maxClique2[i] == 1) {
       ultimate_matches2.push_back(good_matches2[i]);
     }
   }
+  if (ultimate_matches2.size() < 5) {
+    SE2 finalMotionFailure;
+    finalMotionFailure.R.setIdentity();
+    finalMotionFailure.t << -10000,-10000;
+    return finalMotionFailure;
+  }
+  std::vector<int> newAssociation(prova.size(),0);
+  for (size_t i = 0; i < ultimate_matches2.size(); i++) {
+    newAssociation[ultimate_matches2[i].trainIdx] = 1;
+  }
 
-
-  std::cerr << "good_matches "<< good_matches.size() << '\n';
-  std::cerr << "### good_matches "<< good_matches2.size() << '\n';
-  std::cerr << "ultimate_matches size trackLocalMap "<< ultimate_matches.size() << '\n';
-  std::cerr << "###ultimate_matches size trackLocalMap "<< ultimate_matches2.size() << '\n';
-  // Retrieve the non associated landmark
-  // std::vector<int> notAssociatedLandmarkIndex(keypointsFrame.size(),0);
-  // for (size_t i = 0; i < matchesInFrame.size(); i++) {
-  //   notAssociatedLandmarkIndex[matchesInFrame[i].queryIdx] = 1;
-  //   // all the zeros are the non associated ones
-  // }
-  // std::vector<KeyPoint> keyFrame;
-  // for (size_t i = 0; i < keypointsFrame.size(); i++) {
-  //   if (notAssociatedLandmarkIndex[i] == 0) {
-  //     keyFrame.push_back(keypointsFrame[i]);
-  //   }
-  // }
-  //-- Perform an association between frame and map
-  //-- Matching descriptor vectors with a FLANN based matcher
-  // Ptr<DescriptorMatcher> matcherFrameMap = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
-  // std::vector< std::vector<DMatch> > knn_matches;
-  // matcherFrameMap->knnMatch(_mapPointDescriptors, descriptorsFrame, knn_matches, 2 );
-  // //-- Filter matches using the Lowe's ratio test
-  // const float ratio_thresh = 0.7f;
-  // std::vector<DMatch> good_matches;
-  // for (size_t i = 0; i < knn_matches.size(); i++)
-  // {
-  //     if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
-  //     {
-  //         good_matches.push_back(knn_matches[i][0]);
-  //     }
-  // }
-  // std::cerr << "size of good mathces in localmap "<< good_matches.size() << '\n';
-  //
-  // std::vector<int> maxClique;
-  // maxClique = createConsistencyMatrix( _mapPoint, keypointsFrame, good_matches);
-  // std::vector<DMatch> ultimate_matches;
-  // for (size_t i = 0; i < good_matches.size(); i++) {
-  //   if (maxClique[i] == 1) {
-  //     ultimate_matches.push_back(good_matches[i]);
-  //   }
-  // }
-  //
-  // std::cerr << "ultimate matches size in local track "<<ultimate_matches.size() << '\n';
-  // if (ultimate_matches.size() >= 3) {
-  //   mergeMap(keypointsFrame, ultimate_matches, RotationMatrix, translationVector);
-  // }
   SE2 finalMotion;
   Eigen::Matrix<float, 2, 2> Rf;
-  Eigen::Matrix<float, 2, 2> Rf2;
   Eigen::Matrix<float, 2, 2> R2;
-
-  Rf = rigidBodyMotionSurf(keypointsFrame1, keypointsFrame, ultimate_matches); // questa è la rotazione che porta da ref1->ref2
-  Rf2 = rigidBodyMotionSurf(_mapPoint, prova, ultimate_matches2);
-  // std::cerr << "Rf "<< Rf << '\n';
-  // std::cerr << "### Rf ### "<< Rf2 << '\n';
   Eigen::Vector2f mean1;
-  mean1 = meanScanSurf1(keypointsFrame1, ultimate_matches);
-  // std::cerr << "mean1  "<< mean1 << '\n';
-
-  Eigen::Vector2f mean1b;
-  mean1b = meanScanSurf1(_mapPoint, ultimate_matches2);
-  // std::cerr << "### mean1 ###  "<< mean1b << '\n';
-
   Eigen::Vector2f mean2;
-  mean2 = meanScanSurf2(keypointsFrame, ultimate_matches);
-  // std::cerr << "mean2  "<< mean2 << '\n';
-
-  Eigen::Vector2f mean2b;
-  mean2b = meanScanSurf2(prova, ultimate_matches2);
-  // std::cerr << "### mean2 ### "<< mean2b << '\n';
-
+  if (numeroScan >= 5) {
+    Rf = rigidBodyMotionSurf(_partialMap, prova, ultimate_matches2); // questa è la rotazione che porta da ref1->ref2
+    mean1 = meanScanSurf1(_partialMap, ultimate_matches2);
+  } else {
+    Rf = rigidBodyMotionSurf(_mapPoint, prova, ultimate_matches2); // questa è la rotazione che porta da ref1->ref2
+    mean1 = meanScanSurf1(_mapPoint, ultimate_matches2);
+  }
+  // Rf = rigidBodyMotionSurf(_mapPoint, prova, ultimate_matches2); // questa è la rotazione che porta da ref1->ref2
+  // mean1 = meanScanSurf1(_mapPoint, ultimate_matches2);
+  mean2 = meanScanSurf2(prova, ultimate_matches2);
 
   Eigen::Vector2f translationVectorf;
   Eigen::Vector2f t2;
-  translationVectorf = mean2b - Rf2 * mean1b;
-  // std::cerr << "translationVectorf "<<translationVectorf << '\n';
-  // translationVectorTot += translationVectorf;
-
+  translationVectorf = mean2 - Rf * mean1;
   R2 = Rf.inverse();
   t2 = -R2*translationVectorf;
-  finalMotion.R = scanMotion.R*R2;
+  // finalMotion.R = scanMotion.R*R2;
+  finalMotion.R = R2*scanMotion.R;
   finalMotion.t = scanMotion.R*t2+scanMotion.t;
-  // std::cerr << "/* finalMotion.t */"<< finalMotion.t << '\n';
-
 
   std::vector<KeyPoint> keyFrameTrasformed = keypointsFrame;
   Eigen::Vector2f trasformedPoint;
@@ -281,29 +243,42 @@ SE2 LocalMap::trackLocalMap(const std::vector<KeyPoint>& keypointsFrame1,
   float meanPosX;
   float meanPosY;
 
+  std::cerr << "matchWithMap size "<< ultimate_matches2.size() << '\n';
+  for (size_t i = 0; i < ultimate_matches2.size(); i++) {
+    if (numeroScan >= 5) {
+      meanPosX = (keyFrameTrasformed[ultimate_matches2[i].trainIdx].pt.x + _partialMap[ultimate_matches2[i].queryIdx].pt.x)/2;
+      meanPosY = (keyFrameTrasformed[ultimate_matches2[i].trainIdx].pt.y + _partialMap[ultimate_matches2[i].queryIdx].pt.y)/2;
+      int helperIndex = _mapPoint.size()-1-1000;
+      _mapPoint[helperIndex + ultimate_matches2[i].queryIdx].pt.x = meanPosX;
+      _mapPoint[helperIndex + ultimate_matches2[i].queryIdx].pt.y = meanPosY;
+      _mapPointAssociated[helperIndex + ultimate_matches2[i].queryIdx] +=1;
+    } else {
+      meanPosX = (keyFrameTrasformed[ultimate_matches2[i].trainIdx].pt.x + _mapPoint[ultimate_matches2[i].queryIdx].pt.x)/2;
+      meanPosY = (keyFrameTrasformed[ultimate_matches2[i].trainIdx].pt.y + _mapPoint[ultimate_matches2[i].queryIdx].pt.y)/2;
+      _mapPoint[ultimate_matches2[i].queryIdx].pt.x = meanPosX;
+      _mapPoint[ultimate_matches2[i].queryIdx].pt.y = meanPosY;
+      _mapPointAssociated[ultimate_matches2[i].queryIdx] +=1;
+    }
+    // meanPosX = (keyFrameTrasformed[ultimate_matches2[i].trainIdx].pt.x + _mapPoint[ultimate_matches2[i].queryIdx].pt.x)/2;
+    // meanPosY = (keyFrameTrasformed[ultimate_matches2[i].trainIdx].pt.y + _mapPoint[ultimate_matches2[i].queryIdx].pt.y)/2;
+    // _mapPoint[ultimate_matches2[i].queryIdx].pt.x = meanPosX;
+    // _mapPoint[ultimate_matches2[i].queryIdx].pt.y = meanPosY;
+    // _mapPointAssociated[ultimate_matches2[i].queryIdx] +=1;
+  }
+
   for (size_t i = 0; i < keypointsFrame.size(); i++) {
     pointInFrameCoord << keypointsFrame[i].pt.x, keypointsFrame[i].pt.y;
     trasformedPoint = finalMotion.R*pointInFrameCoord + finalMotion.t;
     keyFrameTrasformed[i].pt.x = trasformedPoint(0);
     keyFrameTrasformed[i].pt.y = trasformedPoint(1);
-    if (associatedLandmarkIndex[i] == 0) {
+    if (newAssociation[i] == 0) {
       _mapPoint.push_back(keyFrameTrasformed[i]);
       Mat newRow = descriptorsFrame.row(i);
       _mapPointDescriptors.push_back(newRow);
     }
   }
-  std::cerr << "matchWithMap size "<< matchWithMap.size() << '\n';
-  for (size_t i = 0; i < ultimate_matches2.size(); i++) {
 
-    meanPosX = (keyFrameTrasformed[ultimate_matches2[i].trainIdx].pt.x + _mapPoint[ultimate_matches2[i].queryIdx].pt.x)/2;
-    meanPosY = (keyFrameTrasformed[ultimate_matches2[i].trainIdx].pt.y + _mapPoint[ultimate_matches2[i].queryIdx].pt.y)/2;
-    _mapPoint[ultimate_matches2[i].queryIdx].pt.x = meanPosX;
-    _mapPoint[ultimate_matches2[i].queryIdx].pt.y = meanPosY;
-    // std::cerr << "entro dentro merge map " << '\n';
-    // std::cerr << "diff on x " << keyFrameTrasformed[matchWithMap[i].trainIdx].pt.x - _mapPoint[matchWithMap[i].queryIdx].pt.x << '\n';
-    // std::cerr << "diff on y " << keyFrameTrasformed[matchWithMap[i].trainIdx].pt.y - _mapPoint[matchWithMap[i].queryIdx].pt.y << '\n';
 
-  }
   return finalMotion;
 
 
@@ -358,10 +333,38 @@ void LocalMap::insertKeyFrame(const std::vector<KeyPoint>& keyFrame,
     }
                     }
 
+
+void LocalMap::insertKeyFrame2(const std::vector<KeyPoint>& keyFrame,
+                    const Mat& descriptorsFrame,
+                    const Eigen::Matrix<float, 2, 2>& R,
+                    const Eigen::Vector2f& t){
+    // std::cerr << "number of map point"<< _mapPoint.size() << '\n';
+    Eigen::Vector2f pointInFrameCoord;
+    Eigen::Vector2f trasformedPoint;
+    std::vector<KeyPoint> trasformedKeyPoint = keyFrame;
+    for (size_t i = 0; i < keyFrame.size(); i++) {
+      pointInFrameCoord << keyFrame[i].pt.x, keyFrame[i].pt.y;
+      trasformedPoint = R*pointInFrameCoord + t;
+      trasformedKeyPoint[i].pt.x = trasformedPoint(0);
+      trasformedKeyPoint[i].pt.y = trasformedPoint(1);
+      _mapPoint.push_back(trasformedKeyPoint[i]);
+      Mat newRow = descriptorsFrame.row(i);
+      _mapPointDescriptors.push_back(newRow);
+    }
+                    }
+
 void LocalMap::robotMotion(const SE2& robMotion){
   // Retrieve the last robotPose
-  Eigen::Vector2f lastRobotPose = _robotPose.back();
-  Eigen::Vector2f newRobotPose = robMotion.R * lastRobotPose + robMotion.t;
+  Eigen::Vector2f initRob;
+  initRob << 400,400;
+  // Eigen::Vector2f lastRobotPose = _robotPose.back();
+  // Eigen::Vector2f partialTraslation;
+  // partialTraslation = -robMotion.R*robMotion.t;
+  // Eigen::Vector2f newRobotPose = motionPrec.R*robMotion.R*initRob + motionPrec.R*partialTraslation+motionPrec.t;
+  Eigen::Vector2f newRobotPose = robMotion.R*initRob + robMotion.t;
   _robotPose.push_back(newRobotPose);
+  // motionPrec.R = motionPrec.R*robMotion.R;
+  // motionPrec.t = motionPrec.R*partialTraslation+motionPrec.t;
+
 
 }

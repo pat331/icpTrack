@@ -51,7 +51,9 @@ int main(int argc, char *argv[]){
   //
 
   // Retrieve all the png file of the radar scan in the folder //
-  string radaScanPngFilesFolder = "/home/luca/Documents/tesi/oxford_radar_robotcar_dataset_sample_small/2019-01-10-14-36-48-radar-oxford-10k-partial/radar/*.png";
+  // string radaScanPngFilesFolder = "/home/luca/Documents/tesi/oxford_radar_robotcar_dataset_sample_small/2019-01-10-14-36-48-radar-oxford-10k-partial/radar/*.png";
+  // string radaScanPngFilesFolder = "/home/luca/Documents/tesi/2019-01-10-11-46-21-radar-oxford-10k_Navtech_CTS350-X_Radar/2019-01-10-11-46-21-radar-oxford-10k/radarPartial/*.png";
+  string radaScanPngFilesFolder = "/home/luca/Documents/tesi/2019-01-10-11-46-21-radar-oxford-10k_Navtech_CTS350-X_Radar/2019-01-10-11-46-21-radar-oxford-10k/radarProva/*.png";
   vector<String> pathRadarScanPngFiles;
   pathRadarScanPngFiles = loadPathRadarScanPngFiles(radaScanPngFilesFolder);
   //
@@ -92,7 +94,8 @@ int main(int argc, char *argv[]){
   // Itero su tutti i radarscan della cartella
   SE2 motion;
   LocalMap map, map1;
-  for(int i = 0; i < 30; i++){
+  int firstScan = 10;
+  for(int i = firstScan; i < 110; i++){
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];
     dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
@@ -132,187 +135,37 @@ int main(int argc, char *argv[]){
 
     prewittBike = prewittOperator(bikeStrike);
 
-
-
-    // getMatrixH(prewitt, SPrime);
-
-    // std::string sprime = "sprime  ";
-    // cv::namedWindow(sprime, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(sprime, SPrime); //show image.
-    // cv::waitKey();
-
-    // std::string hm = "sprime  ";
-    // cv::namedWindow(hm, cv::WINDOW_AUTOSIZE);
-    // cv::imshow(hm, HMatrix); //show image.
-    // cv::waitKey();
-    // //
-    ////////////////////////////////////////////////////////////////////////////
-    // Vector3fVector indici;
-    // indici = getIndicesOfElementsInDescendingOrder(prewitt);
     //-- Step 1: Detect the keypoints using SURF Detector
     cv::Mat provaImageSurf = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
 
     Mat prova;
-    prova =cropRadarScan(provaImageSurf, 11, 0, 2000, 400);
+    prova =cropRadarScan(provaImageSurf, 11, 0, 1650, 400);
 
     double maxRadius = 400.0;
     Point2f center( 400, 400);
     int flags = INTER_LINEAR + WARP_FILL_OUTLIERS + WARP_INVERSE_MAP;
     warpPolar(prova, cart, Size(800,800) , center, maxRadius,  flags);
-    threshold( cart, cart, 65, 255, 3 );
+    threshold( cart, cart, 35, 255, 3 );
     Mat  provaBlur, provaBlur2,cartBlur, cartBlurSucc, cartBlurSucc2;
     Mat provaBlura,provaBlurb,provaBlurc,provaBlurd;
     blur( cart, cartBlur, Size(3,3) );
+
     // GaussianBlur(cart,cartBlur,Size(3,3),0);
 
     cv::Mat provaImageSurf2 = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
     Mat prova2;
-    prova2 =cropRadarScan(provaImageSurf2, 11, 0, 2000, 400);
+    prova2 =cropRadarScan(provaImageSurf2, 11, 0, 1650, 400);
     warpPolar(prova2, cartSucc, Size(800,800) , center, maxRadius,  flags);
     // GaussianBlur(cartSucc,cartBlurSucc,Size(3,3),0);
-    threshold( cartSucc, cartSucc, 65, 255, 3 );
+    threshold( cartSucc, cartSucc, 35, 255, 3 );
     blur( cartSucc, cartBlurSucc, Size(3,3) );
     cv::Mat provaImageSurf3 = imread(dataFilePngSucc2, cv::IMREAD_GRAYSCALE);
     Mat prova3;
-    prova3 =cropRadarScan(provaImageSurf3, 11, 0, 2000, 400);
+    prova3 =cropRadarScan(provaImageSurf3, 11, 0, 1650, 400);
     warpPolar(prova3, cartSucc2, Size(800,800) , center, maxRadius,  flags);
     // GaussianBlur(cartSucc2,cartBlurSucc2,Size(3,3),0);
-    threshold( cartSucc2, cartSucc2, 65, 255, 3 );
+    threshold( cartSucc2, cartSucc2, 35, 255, 3 );
     blur( cartSucc2, cartBlurSucc2, Size(3,3) );
-
-    // GaussianBlur(cartSucc,provaBlurb,Size(3,3),0);
-    // GaussianBlur(provaBlurb,provaBlurd,Size(3,3),0);
-    // GaussianBlur(provaBlurd,provaBlur2,Size(3,3),0);
-    // GaussianBlur(provaBlur2,cartBlurSucc,Size(3,3),0);
-
-    // Mat grad_x2, grad_y2;
-    // Mat abs_grad_x2, abs_grad_y2;
-    //
-    // Sobel(provaBlurb, grad_x2, ddepth, 1, 0, ksize, scale, delta, BORDER_DEFAULT);
-    // Sobel(provaBlurb, grad_y2, ddepth, 0, 1, ksize, scale, delta, BORDER_DEFAULT);
-    // // converting back to CV_8U
-    // convertScaleAbs(grad_x2, abs_grad_x2);
-    // convertScaleAbs(grad_y2, abs_grad_y2);
-    // addWeighted(abs_grad_x2, 0.5, abs_grad_y2, 0.5, 0, cartBlurSucc);
-    //
-    //
-    // Ptr<SURF> detector2 = SURF::create( minHessian );
-    // std::vector<KeyPoint> keypoints2;
-    // detector2->detect( cartSucc , keypoints2 );
-    // //-- Draw keypoints
-    // Mat img_keypoints2;
-    // drawKeypoints( cart, keypoints2, img_keypoints2 );
-    // //-- Show detected (drawn) keypoints
-    // imshow("SURF Keypoints2", img_keypoints2 );
-    // waitKey();
-    // return 0;
-    //////////////////////////////////////////////////////////////////////////////////////////////////////
-    //-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
-    // int minHessian = 1700;
-    // Ptr<SURF> detector = SURF::create( minHessian );
-    // std::vector<KeyPoint> keypoints1, keypoints2;
-    // Mat descriptors1, descriptors2;
-    // detector->detectAndCompute( cart, noArray(), keypoints1, descriptors1 );
-    // detector->detectAndCompute( cartSucc, noArray(), keypoints2, descriptors2 );
-    // //-- Step 2: Matching descriptor vectors with a brute force matcher
-    // // Since SURF is a floating-point descriptor NORM_L2 is used
-    // Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE);
-    // std::vector< DMatch > matches;
-    // matcher->match( descriptors1, descriptors2, matches );
-    // // Ptr<DescriptorMatcher> matcher = DescriptorMatcher::create(DescriptorMatcher::BRUTEFORCE);
-    // // std::vector< DMatch > matches;
-    // // matcher->match( descriptors1, descriptors2, matches );
-    // //-- Draw matches
-    // Mat img_matches;
-    // drawMatches( cart, keypoints1, cartSucc, keypoints2, matches, img_matches );
-    // // drawMatches( cart, keypoints1, cart, keypoints1, matches, img_matches );
-    // //-- Show detected matches
-    ///////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Initiate ORB detector
-    // Ptr<FeatureDetector> detectorORB = ORB::create();
-    //
-    // // find the keypoints and descriptors with ORB
-    // std::vector<KeyPoint> keypoints_object, keypoints_scene;
-    // detectorORB->detect(cartBlur, keypoints_object);
-    // detectorORB->detect(cartBlurSucc, keypoints_scene);
-    //
-    // Ptr<DescriptorExtractor> extractor = ORB::create();
-    // Mat descriptors_object, descriptors_scene;
-    // extractor->compute(cartBlur, keypoints_object, descriptors_object );
-    // extractor->compute(cartBlurSucc, keypoints_scene, descriptors_scene );
-    //
-    // //-- Draw keypoints
-    // Mat img_keypointsORB;
-    // drawKeypoints( cartBlur, keypoints_object, img_keypointsORB );
-    // //-- Show detected (drawn) keypoints
-    // imshow("ORB Keypoints", img_keypointsORB );
-    // waitKey();
-    //
-    // Mat img_keypointsORB2;
-    // drawKeypoints( cartBlurSucc, keypoints_scene, img_keypointsORB2 );
-    // //-- Show detected (drawn) keypoints
-    // imshow("ORB Keypoints2", img_keypointsORB2 );
-    // waitKey();
-    //
-    // Ptr<DescriptorMatcher> matcherORB = DescriptorMatcher::create("BruteForce-Hamming");
-    // std::vector< std::vector<DMatch> > knn_matchesORB;
-    // matcherORB->knnMatch( descriptors_object, descriptors_scene, knn_matchesORB, 2 );
-    //
-    //
-    // const float ratio_threshORB = 0.7f;
-    // std::vector<DMatch> good_matchesORB;
-    // for (size_t i = 0; i < knn_matchesORB.size(); i++)
-    // {
-    //     if (knn_matchesORB[i][0].distance < ratio_threshORB * knn_matchesORB[i][1].distance)
-    //     {
-    //         good_matchesORB.push_back(knn_matchesORB[i][0]);
-    //     }
-    // }
-    //
-    // //-- Draw matches
-    // Mat img_matchesORB3;
-    // // drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
-    // //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    // drawMatches( cartBlur, keypoints_object, cartBlurSucc, keypoints_scene, good_matchesORB, img_matchesORB3, Scalar::all(-1),
-    //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    // imshow("Matches", img_matchesORB3 );
-    // waitKey();
-
-    // BFMatcher matcherORB(NORM_L2);
-    // std::vector<vector<DMatch> > matchesORB;
-    // matcher.knnMatch(descriptors1, descriptors2, matches,2);
-    //
-    // std::vector<DMatch> match1;
-    // std::vector<DMatch> match2;
-    //
-    // for(int i=0; i<matches.size(); i++)
-    // {
-    //     match1.push_back(matches[i][0]);
-    //     match2.push_back(matches[i][1]);
-    // }
-    //
-    // Mat img_matches1, img_matches2;
-    // drawMatches(img1, kp1, img2, kp2, match1, img_matches1);
-    // drawMatches(img1, kp1, img2, kp2, match2, img_matches2);
-    // Ptr<FeatureDetector> detectorORB = ORB::create();
-    // // OrbFeatureDetector detectorORB //OrbFeatureDetector detector;SurfFeatureDetector
-    // vector<KeyPoint> keypointsORB1;
-    // detectorORB.detect(cartBlur, keypointsORB1);
-    // vector<KeyPoint> keypointsORB2;
-    // detectorORB.detect(cartBlurSucc, keypointsORB2);
-    //
-    // OrbDescriptorExtractor extractorORB; //OrbDescriptorExtractor extractor; SurfDescriptorExtractor extractor;
-    // Mat descriptors_ORB1, descriptors_ORB2;
-    // extractorORB.compute( cartBlur, keypointsORB1, descriptors_ORB1 );
-    // extractorORB.compute( cartBlurSucc, keypointsORB2, descriptors_ORB2 );
-    //
-    // //-- Step 3: Matching descriptor vectors with a brute force matcher
-    // BFMatcher matcher(NORM_L2, true);   //BFMatcher matcher(NORM_L2);
-    //
-    // vector< DMatch> matches;
-    // matcher.match(descriptors_ORB1, descriptors_ORB2, matches);
-
-
 
 
 
@@ -339,7 +192,7 @@ int main(int argc, char *argv[]){
             good_matches.push_back(knn_matches[i][0]);
         }
     }
-    // if (i==0) {
+    // if (i==firstScan) {
     //   Mat mapPoints1;
     //   drawKeypoints( cartBlur, keypoints1, mapPoints1 );
     //   //-- Show detected (drawn) keypoints
@@ -348,7 +201,7 @@ int main(int argc, char *argv[]){
     // }
 
 
-    if (i==0) {
+    if (i==firstScan) {
       map.initFirstMap(keypoints1,descriptors1);
       map1.initFirstMap(keypoints1,descriptors1);
       R1.setIdentity();
@@ -357,12 +210,12 @@ int main(int argc, char *argv[]){
     // map.initFirstMap(keypoints1,descriptors1);
 
     //-- Draw matches
-    // Mat img_matches;
+    // Mat img_matches33;
     // // drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
     // //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    // drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
+    // drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, good_matches, img_matches33, Scalar::all(-1),
     //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
-    // imshow("Matches", img_matches );
+    // imshow("Matches", img_matches33 );
     // waitKey();
 
     std::vector<int> maxClique;
@@ -375,12 +228,20 @@ int main(int argc, char *argv[]){
         ultimate_matches.push_back(good_matches[i]);
       }
     }
-    std::cerr << "ultimate_matches SCAN SCAN "<<ultimate_matches.size() << '\n';
 
-// PARTE FUNZIONANTE PER LA CREAZIONE DELLA MAPPA
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-std::cerr << "++++++++++++++++++++++++++++++++++++" << '\n';
+    //
+    // Mat img_matches;
+    // // drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
+    // //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    // drawMatches( cartBlur, keypoints1, cartBlurSucc, keypoints2, ultimate_matches, img_matches, Scalar::all(-1),
+    //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
+    // imshow("Matches", img_matches );
+    // waitKey();
+    std::cerr << "ultimate matche size cazzo de buda printa sto coso "<< ultimate_matches.size() << '\n';
+    // PARTE FUNZIONANTE PER LA CREAZIONE DELLA MAPPA
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    std::cerr << "++++++++++++++++++++++++++++++++++++" << '\n';
     Eigen::Matrix<float, 2, 2> Rf;
 
     Rf = rigidBodyMotionSurf(keypoints1, keypoints2, ultimate_matches); // questa è la rotazione che porta da ref1->ref2
@@ -392,11 +253,13 @@ std::cerr << "++++++++++++++++++++++++++++++++++++" << '\n';
 
     Eigen::Vector2f translationVectorf;
     translationVectorf = mean2 - Rf * mean1;
-    SE2 robMotion;
-    robMotion.R = Rf;
-    robMotion.t = translationVectorf;
-    map1.robotMotion(robMotion);
-    map.robotMotion(robMotion);
+    // SE2 robMotion;
+    // robMotion.R = Rf.inverse();
+    // std::cerr << "/* robMotion.R */ "<< robMotion.R << '\n';
+    // robMotion.t = translationVectorf;
+    // std::cerr << "/* robMotion.t */ "<< robMotion.t << '\n';
+    // map1.robotMotion(robMotion);
+    // map.robotMotion(robMotion);
 
     R2 = Rf.inverse();
     t2 = -R2*translationVectorf;
@@ -405,12 +268,24 @@ std::cerr << "++++++++++++++++++++++++++++++++++++" << '\n';
     R1 = Rtot;
     t1 = translationVectorTot;
 
+    SE2 robMotion;
+    robMotion.R = Rtot;
+    // std::cerr << "/* robMotion.R */ "<< robMotion.R << '\n';
+    robMotion.t = translationVectorTot;
+    // std::cerr << "/* robMotion.t */ "<< robMotion.t << '\n';
+    // map1.robotMotion(robMotion);
+    map.robotMotion(robMotion);
 
-    map.insertKeyFrame(keypoints2,descriptors2,Rtot,translationVectorTot);
+    std::vector<KeyPoint> provaKeyMap;
+
+    if (ultimate_matches.size()<40) {
+      map.insertKeyFrame(keypoints2,descriptors2,Rtot,translationVectorTot);
+    }
+    // map.insertKeyFrame(keypoints2,descriptors2,Rtot,translationVectorTot);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     std::cerr << "################################" << '\n';
-    if (i==0) {
+    if (i==firstScan) {
       motion.R.setIdentity();
       motion.t << 0,0;
     }
@@ -427,9 +302,24 @@ std::cerr << "++++++++++++++++++++++++++++++++++++" << '\n';
     for (size_t i = 0; i < indexLandmarkAssociated.size(); i++) {
       check+=indexLandmarkAssociated[i];
     }
-    std::cerr << "check "<< check << '\n';
 
-    motion = map1.trackLocalMap(keypoints1,descriptors1,keypoints2,descriptors2,motion,matchWithMap,indexLandmarkAssociated);
+    SE2 motion2;
+    motion2 = map1.trackLocalMap(keypoints1,descriptors1,keypoints2,descriptors2,motion,matchWithMap,indexLandmarkAssociated);
+    if (motion2.t(0) < -999 && motion2.t(1) < -999) { // failure in map-scan matching
+      Eigen::Vector2f translationVectorf;
+      translationVectorf = mean2 - Rf * mean1;
+      R2 = Rf.inverse();
+      t2 = -R2*translationVectorf;
+      motion.R = motion.R*R2;
+      motion.t = motion.R*t2 + motion.t;
+      map1.insertKeyFrame2(keypoints2,descriptors2,motion.R,motion.t);
+      map1.robotMotion(motion);
+      // motion.R = motion2;
+    }else{
+      map1.robotMotion(motion2);
+      motion.R = motion2.R;
+      motion.t = motion2.t;
+    }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // map.trackLocalMap(keypoints2,descriptors2,ultimate_matches,Rtot,translationVectorTot);
