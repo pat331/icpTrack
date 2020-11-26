@@ -24,8 +24,7 @@ LocalMap::LocalMap(){
   _originImage(1) = 0;
   numeroDescrittori = 0;
   numeroScan = 0;
-  motionPrec.R.setIdentity();
-  motionPrec.t << 0,0;
+
 
 }
 
@@ -62,15 +61,32 @@ void LocalMap::dispMap(){
   std::vector<KeyPoint> keyForDisp = _mapPoint;
   for (size_t i = 0; i < _mapPoint.size(); i++) {
     Eigen::Vector2f disp;
-    disp(0) = _mapPoint[i].pt.x*1;
-    disp(1) = _mapPoint[i].pt.y*1;
-    if (_mapPointAssociated[i]>1) {
-      provaDisp.push_back(disp);
-    }
-    // provaDisp.push_back(disp);
+    disp(0) = _mapPoint[i].pt.x*0.5;
+    disp(1) = _mapPoint[i].pt.y*0.5;
+    // if (_mapPointAssociated[i]>1) {
+    //   provaDisp.push_back(disp);
+    // }
+    provaDisp.push_back(disp);
+  }
+  for (size_t i = 0; i < _robotPose.size(); i++) {
+    _robotPose[i] << _robotPose[i](0)*0.2, _robotPose[i](1)*0.2;
+  }
+  // drawPoints(local_image, provaDisp, cv::Scalar(255,0,0),1);
+  drawPoints(local_image, _robotPose, cv::Scalar(0,0,255),1);
+  cv::imshow("Scan matcher", local_image);
+  waitKey();
+}
+
+void LocalMap::dispMotion(){
+
+  RGBImage local_image(1500, 1500);
+  local_image.create(1500, 1500);
+  local_image=cv::Vec3b(255,255,255);
+
+  for (size_t i = 0; i < _robotPose.size(); i++) {
+    _robotPose[i] << 400 + _robotPose[i](0)*0.1, 400 + _robotPose[i](1)*0.1;
   }
 
-  drawPoints(local_image, provaDisp, cv::Scalar(255,0,0),1);
   drawPoints(local_image, _robotPose, cv::Scalar(0,0,255),1);
   cv::imshow("Scan matcher", local_image);
   waitKey();
@@ -357,14 +373,13 @@ void LocalMap::robotMotion(const SE2& robMotion){
   // Retrieve the last robotPose
   Eigen::Vector2f initRob;
   initRob << 400,400;
-  // Eigen::Vector2f lastRobotPose = _robotPose.back();
-  // Eigen::Vector2f partialTraslation;
-  // partialTraslation = -robMotion.R*robMotion.t;
-  // Eigen::Vector2f newRobotPose = motionPrec.R*robMotion.R*initRob + motionPrec.R*partialTraslation+motionPrec.t;
+
   Eigen::Vector2f newRobotPose = robMotion.R*initRob + robMotion.t;
   _robotPose.push_back(newRobotPose);
-  // motionPrec.R = motionPrec.R*robMotion.R;
-  // motionPrec.t = motionPrec.R*partialTraslation+motionPrec.t;
 
+}
+
+void LocalMap::fillNKS(int numberKeyPoints){
+  _numberKeyPointsInScan.push_back(numberKeyPoints);
 
 }

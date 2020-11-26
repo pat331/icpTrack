@@ -25,6 +25,7 @@ class LocalMap{
     void initFirstMap(const std::vector<KeyPoint>& keypoints, const Mat& descriptors);
 
     void dispMap();
+    void dispMotion();
 
     std::vector<DMatch> matchingWithMap(const std::vector<KeyPoint>& keypointsFrame,
                                         const Mat& descriptorsFrame);
@@ -54,7 +55,7 @@ class LocalMap{
 
     void robotMotion(const SE2& robMotion);
 
-    void clipMap();
+    void fillNKS(int numberKeyPoints);
 
 
   protected:
@@ -69,7 +70,10 @@ class LocalMap{
     int numeroDescrittori;
     int numeroScan;
     Vector2fVector _robotPose;
-    SE2 motionPrec;
+
+
+    std::vector<int> _numberKeyPointsInScan;
+
 
 
 

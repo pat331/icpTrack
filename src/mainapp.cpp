@@ -50,10 +50,92 @@ int main(int argc, char *argv[]){
   Eigen::Vector2f pntWorld;
   //
 
+
+  string gtCSVFolder = "/home/luca/Documents/tesi/validation/2019-01-15-12-52-32-radar-oxford-10k-partial_Navtech_CTS350-X_Radar_Optimised_SE2_Odometry/2019-01-15-12-52-32-radar-oxford-10k-partial/gt/radar_odometry.csv";
+  // string gtCSVFolder = "/home/luca/Documents/tesi/validation/2019-01-15-12-52-32-radar-oxford-10k-partial_Navtech_CTS350-X_Radar_Optimised_SE2_Odometry/2019-01-15-12-52-32-radar-oxford-10k-partial/gt/onlyCoord_radar_odometry.csv";
+  // vector<vector<double>> data = parse2DCsvFile(gtCSVFolder);
+  // Read gt csv
+  std::vector<std::pair<std::string, std::vector<double>>> gt = read_csv(gtCSVFolder);
+  // std::cerr << "gt "<< gt[0].second.size() << '\n';
+  Vector2fVector gtPose;
+  Eigen::Vector2f initialPose;
+  initialPose << 0, 0;
+  gtPose.push_back(initialPose);
+
+  std::vector<double> dTheta;
+  for (size_t i = 0; i < gt[0].second.size(); i++) {
+    dTheta.push_back(gt[7].second[i]);
+  }
+  std::vector<double> dx;
+  for (size_t i = 0; i < gt[0].second.size(); i++) {
+    dx.push_back(gt[2].second[i]);
+  }
+  std::vector<double> dy;
+  for (size_t i = 0; i < gt[0].second.size(); i++) {
+    dy.push_back(gt[3].second[i]);
+  }
+
+  Eigen::Matrix<float, 2, 2> Rf;
+  Eigen::Matrix<float, 2, 2> RPrec;
+  Eigen::Matrix<float, 2, 2> RSucc;
+  RPrec << 1,0,0,1;
+  Eigen::Vector2f tf;
+  Eigen::Vector2f tPrec;
+  Eigen::Vector2f tSucc;
+  tPrec << 0,0;
+
+  for (size_t i = 0; i < 410; i++) {
+    Eigen::Vector2f pos;
+    RSucc << cos(dTheta[i]),-sin(dTheta[i]),sin(dTheta[i]),cos(dTheta[i]);
+    tSucc << dx[i]*0.3,dy[i]*0.3;
+    pos = RSucc*RPrec*initialPose + RPrec*tSucc + tPrec;
+    tPrec = RPrec*tSucc + tPrec;
+    RPrec = RPrec*RSucc;
+    pos(0) = pos(0)+500;
+    pos(1) = pos(1)+500;
+    gtPose.push_back(pos);
+  }
+
+  //
+  // for (size_t i = 0; i < 400; i++) {
+  //   Eigen::Vector2f pos;
+  //
+  //   RSucc(0,0) = cos(gt[7].second[i]);
+  //   RSucc(0,1) = -sin(gt[7].second[i]);
+  //   RSucc(1,0) = sin(gt[7].second[i]);
+  //   RSucc(0,1) = cos(gt[7].second[i]);
+  //
+  //   tSucc(0) = gt[2].second[i]*0.5;
+  //   tSucc(1) = gt[3].second[i]*0.5;
+  //
+  //   Rf = RPrec*RSucc;
+  //   std::cerr << "Rf "<< Rf << '\n';
+  //   pos = Rf*initialPose + RPrec*tSucc + tPrec;
+  //
+  //   tPrec = RPrec*tSucc + tPrec;
+  //   // std::cerr << "tPrec "<< tPrec(0)<< '\n';
+  //   RPrec = RPrec*RSucc;
+  //   //
+  //   pos(0) = pos(0)+500;
+  //   pos(1) = pos(1)+500;
+  //
+  //   gtPose.push_back(pos);
+  //
+  // }
+  RGBImage ground_truth(1000, 1000);
+  ground_truth.create(1000, 1000);
+  ground_truth=cv::Vec3b(255,255,255);
+  // drawPoints(local_image, provaDisp, cv::Scalar(255,0,0),1);
+  drawPoints(ground_truth, gtPose, cv::Scalar(0,0,255),1);
+  cv::imshow("Scan matcher", ground_truth);
+  waitKey();
+
   // Retrieve all the png file of the radar scan in the folder //
   // string radaScanPngFilesFolder = "/home/luca/Documents/tesi/oxford_radar_robotcar_dataset_sample_small/2019-01-10-14-36-48-radar-oxford-10k-partial/radar/*.png";
   // string radaScanPngFilesFolder = "/home/luca/Documents/tesi/2019-01-10-11-46-21-radar-oxford-10k_Navtech_CTS350-X_Radar/2019-01-10-11-46-21-radar-oxford-10k/radarPartial/*.png";
-  string radaScanPngFilesFolder = "/home/luca/Documents/tesi/2019-01-10-11-46-21-radar-oxford-10k_Navtech_CTS350-X_Radar/2019-01-10-11-46-21-radar-oxford-10k/radarProva/*.png";
+  // string radaScanPngFilesFolder = "/home/luca/Documents/tesi/2019-01-10-11-46-21-radar-oxford-10k_Navtech_CTS350-X_Radar/2019-01-10-11-46-21-radar-oxford-10k/radarProva/*.png";
+  // string radaScanPngFilesFolder = "/home/luca/Documents/tesi/2019-01-10-11-46-21-radar-oxford-10k_Navtech_CTS350-X_Radar/2019-01-10-11-46-21-radar-oxford-10k/radar/*.png";
+  string radaScanPngFilesFolder = "/home/luca/Documents/tesi/validation/2019-01-15-12-52-32-radar-oxford-10k-partial/radar/*.png";
   vector<String> pathRadarScanPngFiles;
   pathRadarScanPngFiles = loadPathRadarScanPngFiles(radaScanPngFilesFolder);
   //
@@ -94,8 +176,8 @@ int main(int argc, char *argv[]){
   // Itero su tutti i radarscan della cartella
   SE2 motion;
   LocalMap map, map1;
-  int firstScan = 10;
-  for(int i = firstScan; i < 110; i++){
+  int firstScan = 385;
+  for(int i = firstScan; i < 405; i++){
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];
     dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
@@ -139,7 +221,7 @@ int main(int argc, char *argv[]){
     cv::Mat provaImageSurf = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
 
     Mat prova;
-    prova =cropRadarScan(provaImageSurf, 11, 0, 1650, 400);
+    prova =cropRadarScan(provaImageSurf, 11, 0, 3000, 400);
 
     double maxRadius = 400.0;
     Point2f center( 400, 400);
@@ -154,14 +236,14 @@ int main(int argc, char *argv[]){
 
     cv::Mat provaImageSurf2 = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
     Mat prova2;
-    prova2 =cropRadarScan(provaImageSurf2, 11, 0, 1650, 400);
+    prova2 =cropRadarScan(provaImageSurf2, 11, 0, 3000, 400);
     warpPolar(prova2, cartSucc, Size(800,800) , center, maxRadius,  flags);
     // GaussianBlur(cartSucc,cartBlurSucc,Size(3,3),0);
     threshold( cartSucc, cartSucc, 35, 255, 3 );
     blur( cartSucc, cartBlurSucc, Size(3,3) );
     cv::Mat provaImageSurf3 = imread(dataFilePngSucc2, cv::IMREAD_GRAYSCALE);
     Mat prova3;
-    prova3 =cropRadarScan(provaImageSurf3, 11, 0, 1650, 400);
+    prova3 =cropRadarScan(provaImageSurf3, 11, 0, 3000, 400);
     warpPolar(prova3, cartSucc2, Size(800,800) , center, maxRadius,  flags);
     // GaussianBlur(cartSucc2,cartBlurSucc2,Size(3,3),0);
     threshold( cartSucc2, cartSucc2, 35, 255, 3 );
@@ -170,8 +252,8 @@ int main(int argc, char *argv[]){
 
 
     //-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
-    int minHessian = 200;
-    Ptr<SURF> detector = SURF::create( minHessian );
+    int minHessian = 100;
+    Ptr<SURF> detector = SURF::create( minHessian);
     std::vector<KeyPoint> keypoints1, keypoints2, keypoints3;
     Mat descriptors1, descriptors2, descriptors3;
 
@@ -193,17 +275,18 @@ int main(int argc, char *argv[]){
         }
     }
     // if (i==firstScan) {
-    //   Mat mapPoints1;
-    //   drawKeypoints( cartBlur, keypoints1, mapPoints1 );
-    //   //-- Show detected (drawn) keypoints
-    //   imshow("First map 1", mapPoints1 );
-    //   waitKey();
+      Mat mapPoints1;
+      drawKeypoints( cartBlur, keypoints1, mapPoints1 );
+      //-- Show detected (drawn) keypoints
+      imshow("First map 1", mapPoints1 );
+      waitKey();
     // }
 
 
     if (i==firstScan) {
       map.initFirstMap(keypoints1,descriptors1);
-      map1.initFirstMap(keypoints1,descriptors1);
+      map.fillNKS(keypoints1.size());
+      // map1.initFirstMap(keypoints1,descriptors1);
       R1.setIdentity();
       t1 << 0,0;
     }
@@ -237,7 +320,8 @@ int main(int argc, char *argv[]){
     //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
     // imshow("Matches", img_matches );
     // waitKey();
-    std::cerr << "ultimate matche size cazzo de buda printa sto coso "<< ultimate_matches.size() << '\n';
+    std::cerr << "i = "<< i << '\n';
+    std::cerr << "ultimate matche size  "<< ultimate_matches.size() << '\n';
     // PARTE FUNZIONANTE PER LA CREAZIONE DELLA MAPPA
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -253,13 +337,6 @@ int main(int argc, char *argv[]){
 
     Eigen::Vector2f translationVectorf;
     translationVectorf = mean2 - Rf * mean1;
-    // SE2 robMotion;
-    // robMotion.R = Rf.inverse();
-    // std::cerr << "/* robMotion.R */ "<< robMotion.R << '\n';
-    // robMotion.t = translationVectorf;
-    // std::cerr << "/* robMotion.t */ "<< robMotion.t << '\n';
-    // map1.robotMotion(robMotion);
-    // map.robotMotion(robMotion);
 
     R2 = Rf.inverse();
     t2 = -R2*translationVectorf;
@@ -270,56 +347,55 @@ int main(int argc, char *argv[]){
 
     SE2 robMotion;
     robMotion.R = Rtot;
-    // std::cerr << "/* robMotion.R */ "<< robMotion.R << '\n';
     robMotion.t = translationVectorTot;
-    // std::cerr << "/* robMotion.t */ "<< robMotion.t << '\n';
-    // map1.robotMotion(robMotion);
+
     map.robotMotion(robMotion);
 
     std::vector<KeyPoint> provaKeyMap;
 
-    if (ultimate_matches.size()<40) {
-      map.insertKeyFrame(keypoints2,descriptors2,Rtot,translationVectorTot);
-    }
+    // if (ultimate_matches.size()<35) {
+    //   map.insertKeyFrame(keypoints2,descriptors2,Rtot,translationVectorTot);
+    //   map.fillNKS(keypoints2.size());
+    // }
     // map.insertKeyFrame(keypoints2,descriptors2,Rtot,translationVectorTot);
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    std::cerr << "################################" << '\n';
-    if (i==firstScan) {
-      motion.R.setIdentity();
-      motion.t << 0,0;
-    }
-
-
-    std::vector<DMatch> matchWithMap;
-    matchWithMap = map1.matchingWithMap(keypoints2,descriptors2);
-    std::vector<int> indexLandmarkAssociated(keypoints2.size(),0);
-    for (size_t i = 0; i < matchWithMap.size(); i++) {
-      indexLandmarkAssociated[matchWithMap[i].trainIdx] = 1;
-    }
-    std::cerr << "/* matchingWithMap size  */ "<< matchWithMap.size() << '\n';
-    float check =0;
-    for (size_t i = 0; i < indexLandmarkAssociated.size(); i++) {
-      check+=indexLandmarkAssociated[i];
-    }
-
-    SE2 motion2;
-    motion2 = map1.trackLocalMap(keypoints1,descriptors1,keypoints2,descriptors2,motion,matchWithMap,indexLandmarkAssociated);
-    if (motion2.t(0) < -999 && motion2.t(1) < -999) { // failure in map-scan matching
-      Eigen::Vector2f translationVectorf;
-      translationVectorf = mean2 - Rf * mean1;
-      R2 = Rf.inverse();
-      t2 = -R2*translationVectorf;
-      motion.R = motion.R*R2;
-      motion.t = motion.R*t2 + motion.t;
-      map1.insertKeyFrame2(keypoints2,descriptors2,motion.R,motion.t);
-      map1.robotMotion(motion);
-      // motion.R = motion2;
-    }else{
-      map1.robotMotion(motion2);
-      motion.R = motion2.R;
-      motion.t = motion2.t;
-    }
+    // std::cerr << "################################" << '\n';
+    // if (i==firstScan) {
+    //   motion.R.setIdentity();
+    //   motion.t << 0,0;
+    // }
+    //
+    //
+    // std::vector<DMatch> matchWithMap;
+    // matchWithMap = map1.matchingWithMap(keypoints2,descriptors2);
+    // std::vector<int> indexLandmarkAssociated(keypoints2.size(),0);
+    // for (size_t i = 0; i < matchWithMap.size(); i++) {
+    //   indexLandmarkAssociated[matchWithMap[i].trainIdx] = 1;
+    // }
+    // std::cerr << "/* matchingWithMap size  */ "<< matchWithMap.size() << '\n';
+    // float check =0;
+    // for (size_t i = 0; i < indexLandmarkAssociated.size(); i++) {
+    //   check+=indexLandmarkAssociated[i];
+    // }
+    //
+    // SE2 motion2;
+    // motion2 = map1.trackLocalMap(keypoints1,descriptors1,keypoints2,descriptors2,motion,matchWithMap,indexLandmarkAssociated);
+    // if (motion2.t(0) < -999 && motion2.t(1) < -999) { // failure in map-scan matching
+    //   Eigen::Vector2f translationVectorf;
+    //   translationVectorf = mean2 - Rf * mean1;
+    //   R2 = Rf.inverse();
+    //   t2 = -R2*translationVectorf;
+    //   motion.R = motion.R*R2;
+    //   motion.t = motion.R*t2 + motion.t;
+    //   map1.insertKeyFrame2(keypoints2,descriptors2,motion.R,motion.t);
+    //   map1.robotMotion(motion);
+    //   // motion.R = motion2;
+    // }else{
+    //   map1.robotMotion(motion2);
+    //   motion.R = motion2.R;
+    //   motion.t = motion2.t;
+    // }
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // map.trackLocalMap(keypoints2,descriptors2,ultimate_matches,Rtot,translationVectorTot);
@@ -420,8 +496,9 @@ int main(int argc, char *argv[]){
     // waitKey(0);
 
   }
-  map.dispMap();
-  map1.dispMap();
+  map.dispMotion();
+  // map.dispMap();
+  // map1.dispMap();
   return 0;
 
 

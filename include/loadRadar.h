@@ -8,6 +8,8 @@
 using namespace cv;
 using namespace std;
 
+
+std::vector<std::pair<std::string, std::vector<double>>> read_csv(std::string filename);
 // Load of txt file in mat object
 Mat ReadMatFromTxt(string filename, int rows,int cols);
 //
