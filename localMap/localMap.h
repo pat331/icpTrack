@@ -57,6 +57,8 @@ class LocalMap{
 
     void fillNKS(int numberKeyPoints);
 
+    void errorEstimation();
+
 
   protected:
 

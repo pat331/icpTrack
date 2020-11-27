@@ -84,7 +84,7 @@ int main(int argc, char *argv[]){
   Eigen::Vector2f tSucc;
   tPrec << 0,0;
 
-  for (size_t i = 0; i < 410; i++) {
+  for (size_t i = 0; i < gt[0].second.size(); i++) {
     Eigen::Vector2f pos;
     RSucc << cos(dTheta[i]),-sin(dTheta[i]),sin(dTheta[i]),cos(dTheta[i]);
     tSucc << dx[i]*0.3,dy[i]*0.3;
@@ -93,6 +93,9 @@ int main(int argc, char *argv[]){
     RPrec = RPrec*RSucc;
     pos(0) = pos(0)+500;
     pos(1) = pos(1)+500;
+    // if (i>=100) {
+    //   gtPose.push_back(pos);
+    // }
     gtPose.push_back(pos);
   }
 
@@ -176,8 +179,8 @@ int main(int argc, char *argv[]){
   // Itero su tutti i radarscan della cartella
   SE2 motion;
   LocalMap map, map1;
-  int firstScan = 385;
-  for(int i = firstScan; i < 405; i++){
+  int firstScan = 50;
+  for(int i = firstScan; i < 2800; i++){
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];
     dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
@@ -188,71 +191,41 @@ int main(int argc, char *argv[]){
     cv::Mat cart, cartSucc, cartSucc2;
     cv::Mat cartFiltered;
     cv::Mat locations;   // output, locations of non-zero pixels
-    cv::Mat bikeStrike;
-    cv::Mat prewittBike, bikeORIGINAL;
 
-
-    bikeStrike = imread(dataBikeStrike, cv::IMREAD_GRAYSCALE);
-    bikeORIGINAL = imread(dataBikeStrikePrewitt,  CV_32FC1);
-
-    cv::Mat radarScanImage = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
-    radarScanImage = cropRadarScan(radarScanImage);
-
-
-
-
-    cv::Mat radarScanImageSucc = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
-    radarScanImageSucc = cropRadarScan(radarScanImageSucc);
-
-    cv::Mat radarScanImageSucc2 = imread(dataFilePngSucc2, cv::IMREAD_GRAYSCALE);
-    radarScanImageSucc2 = cropRadarScan(radarScanImageSucc2);
-
-    // convert rardarscanImage in float
-    radarScanImage.convertTo(radarScanImage, CV_32FC1, 1/255.0);
-    radarScanImageSucc.convertTo(radarScanImageSucc, CV_32FC1, 1/255.0);
-    radarScanImageSucc2.convertTo(radarScanImageSucc2, CV_32FC1, 1/255.0);
-    bikeStrike.convertTo(bikeStrike, CV_32FC1, 1/255.0);
-
-
-
-    prewittBike = prewittOperator(bikeStrike);
 
     //-- Step 1: Detect the keypoints using SURF Detector
     cv::Mat provaImageSurf = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
+    cv::Mat provaImageSurf2 = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
+    cv::Mat provaImageSurf3 = imread(dataFilePngSucc2, cv::IMREAD_GRAYSCALE);
 
     Mat prova;
+    Mat prova2;
+    Mat prova3;
+    Mat  provaBlur, provaBlur2, cartBlur, cartBlurSucc, cartBlurSucc2;
+    // Mat provaBlura,provaBlurb,provaBlurc,provaBlurd;
+
     prova =cropRadarScan(provaImageSurf, 11, 0, 3000, 400);
+    prova2 =cropRadarScan(provaImageSurf2, 11, 0, 3000, 400);
+    prova3 =cropRadarScan(provaImageSurf3, 11, 0, 3000, 400);
 
     double maxRadius = 400.0;
     Point2f center( 400, 400);
     int flags = INTER_LINEAR + WARP_FILL_OUTLIERS + WARP_INVERSE_MAP;
+
     warpPolar(prova, cart, Size(800,800) , center, maxRadius,  flags);
-    threshold( cart, cart, 35, 255, 3 );
-    Mat  provaBlur, provaBlur2,cartBlur, cartBlurSucc, cartBlurSucc2;
-    Mat provaBlura,provaBlurb,provaBlurc,provaBlurd;
-    blur( cart, cartBlur, Size(3,3) );
-
-    // GaussianBlur(cart,cartBlur,Size(3,3),0);
-
-    cv::Mat provaImageSurf2 = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
-    Mat prova2;
-    prova2 =cropRadarScan(provaImageSurf2, 11, 0, 3000, 400);
     warpPolar(prova2, cartSucc, Size(800,800) , center, maxRadius,  flags);
-    // GaussianBlur(cartSucc,cartBlurSucc,Size(3,3),0);
-    threshold( cartSucc, cartSucc, 35, 255, 3 );
-    blur( cartSucc, cartBlurSucc, Size(3,3) );
-    cv::Mat provaImageSurf3 = imread(dataFilePngSucc2, cv::IMREAD_GRAYSCALE);
-    Mat prova3;
-    prova3 =cropRadarScan(provaImageSurf3, 11, 0, 3000, 400);
     warpPolar(prova3, cartSucc2, Size(800,800) , center, maxRadius,  flags);
-    // GaussianBlur(cartSucc2,cartBlurSucc2,Size(3,3),0);
+
+    threshold( cart, cart, 35, 255, 3 );
+    threshold( cartSucc, cartSucc, 35, 255, 3 );
     threshold( cartSucc2, cartSucc2, 35, 255, 3 );
+
+    blur( cart, cartBlur, Size(3,3) );
+    blur( cartSucc, cartBlurSucc, Size(3,3) );
     blur( cartSucc2, cartBlurSucc2, Size(3,3) );
 
-
-
     //-- Step 1: Detect the keypoints using SURF Detector, compute the descriptors
-    int minHessian = 100;
+    int minHessian = 20;
     Ptr<SURF> detector = SURF::create( minHessian);
     std::vector<KeyPoint> keypoints1, keypoints2, keypoints3;
     Mat descriptors1, descriptors2, descriptors3;
@@ -275,11 +248,11 @@ int main(int argc, char *argv[]){
         }
     }
     // if (i==firstScan) {
-      Mat mapPoints1;
-      drawKeypoints( cartBlur, keypoints1, mapPoints1 );
-      //-- Show detected (drawn) keypoints
-      imshow("First map 1", mapPoints1 );
-      waitKey();
+      // Mat mapPoints1;
+      // drawKeypoints( cartBlur, keypoints1, mapPoints1 );
+      // //-- Show detected (drawn) keypoints
+      // imshow("First map 1", mapPoints1 );
+      // waitKey();
     // }
 
 
@@ -292,7 +265,7 @@ int main(int argc, char *argv[]){
     }
     // map.initFirstMap(keypoints1,descriptors1);
 
-    //-- Draw matches
+    // -- Draw matches
     // Mat img_matches33;
     // // drawMatches( cart, keypoints1, cartSucc, keypoints2, good_matches, img_matches, Scalar::all(-1),
     // //              Scalar::all(-1), std::vector<char>(), DrawMatchesFlags::NOT_DRAW_SINGLE_POINTS );
@@ -322,6 +295,46 @@ int main(int argc, char *argv[]){
     // waitKey();
     std::cerr << "i = "<< i << '\n';
     std::cerr << "ultimate matche size  "<< ultimate_matches.size() << '\n';
+    if (ultimate_matches.size() <3) {
+      std::cerr << "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@" << '\n';
+      std::cerr << "Ripeto scan match con scan successivo " << '\n';
+
+      Ptr<SURF> detector2 = SURF::create( minHessian);
+      detector2->detectAndCompute( cartBlurSucc2, noArray(), keypoints3, descriptors3 );
+
+      Ptr<DescriptorMatcher> matcher2 = DescriptorMatcher::create(DescriptorMatcher::FLANNBASED);
+      std::vector< std::vector<DMatch> > knn_matches;
+      matcher2->knnMatch( descriptors1, descriptors3, knn_matches, 2 );
+      //-- Filter matches using the Lowe's ratio test
+      const float ratio_thresh = 0.7f;
+      std::vector<DMatch> good_matches;
+      for (size_t i = 0; i < knn_matches.size(); i++)
+      {
+          if (knn_matches[i][0].distance < ratio_thresh * knn_matches[i][1].distance)
+          {
+              good_matches.push_back(knn_matches[i][0]);
+          }
+      }
+
+      std::vector<int> maxClique2;
+      maxClique2 = createConsistencyMatrix(keypoints1, keypoints3, good_matches);
+      ultimate_matches.clear();
+      for (size_t i = 0; i < good_matches.size(); i++) {
+        if (maxClique2[i] == 1) {
+          ultimate_matches.push_back(good_matches[i]);
+        }
+      }
+      if (ultimate_matches.size()<3) {
+        std::cerr << "###############################" << '\n';
+        std::cerr << "Problema non risolto" << '\n';
+        std::cerr << "ultimate_matches seconda prova "<< ultimate_matches.size() << '\n';
+      }else{
+        std::cerr << "ultimate_matches seconda prova "<< ultimate_matches.size() << '\n';
+      }
+      keypoints2.clear();
+      keypoints2=keypoints3;
+    }
+
     // PARTE FUNZIONANTE PER LA CREAZIONE DELLA MAPPA
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -337,7 +350,9 @@ int main(int argc, char *argv[]){
 
     Eigen::Vector2f translationVectorf;
     translationVectorf = mean2 - Rf * mean1;
-
+    // Error estimation
+    
+    //
     R2 = Rf.inverse();
     t2 = -R2*translationVectorf;
     Rtot = R1*R2;
