@@ -24,6 +24,8 @@ LocalMap::LocalMap(){
   _originImage(1) = 0;
   numeroDescrittori = 0;
   numeroScan = 0;
+  _totalErrorRotation = 0;
+  _totalErrorTranslation = 0;
 
 
 }
@@ -87,6 +89,8 @@ void LocalMap::dispMotion(){
     _robotPose[i] << 400 + _robotPose[i](0)*0.1, 400 + _robotPose[i](1)*0.1;
   }
 
+  std::cerr << "medium _totalErrorRotation "<< _totalErrorRotation/2900 << '\n';
+  std::cerr << "medium _totalErrorTranslation "<< _totalErrorTranslation/2900 << '\n';
   drawPoints(local_image, _robotPose, cv::Scalar(0,0,255),1);
   cv::imshow("Scan matcher", local_image);
   waitKey();
@@ -375,6 +379,8 @@ void LocalMap::robotMotion(const SE2& robMotion){
   initRob << 400,400;
 
   Eigen::Vector2f newRobotPose = robMotion.R*initRob + robMotion.t;
+  std::cerr << "      $$$$$$$             " << '\n';
+  std::cerr << "newRobotPose in local map "<< newRobotPose << '\n';
   _robotPose.push_back(newRobotPose);
 
 }
@@ -383,3 +389,20 @@ void LocalMap::fillNKS(int numberKeyPoints){
   _numberKeyPointsInScan.push_back(numberKeyPoints);
 
 }
+
+
+void LocalMap::errorEstimation(const Eigen::Matrix<float, 2, 2>& R_gt,
+                     const Eigen::Vector2f& t_gt,
+                     const Eigen::Matrix<float, 2, 2> R,
+                     const Eigen::Vector2f& t){
+
+  Eigen::Matrix<float, 2, 2> deltaR;
+  deltaR = R_gt * R.transpose();
+  float errorAngle = atan2(deltaR(1,0),deltaR(0,0));
+  Eigen::Vector2f translationConverted;
+  translationConverted << t(0) * 0.0438 * errorAngle, t(1) * 0.0438 * errorAngle; // 1_pixel = 0.0438 metres
+  float scanError;
+  scanError = pow(t_gt(0)-translationConverted(0),2) + pow(t_gt(1)-translationConverted(1),2);
+  _totalErrorTranslation += scanError;
+  _totalErrorRotation += pow(errorAngle,2);
+                     }

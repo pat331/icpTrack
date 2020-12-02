@@ -312,6 +312,33 @@ localMap/localMap.cpp.s:
 	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/localMap/localMap.cpp.s
 .PHONY : localMap/localMap.cpp.s
 
+mapping/mapping.o: mapping/mapping.cpp.o
+
+.PHONY : mapping/mapping.o
+
+# target to build an object file
+mapping/mapping.cpp.o:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/mapping/mapping.cpp.o
+.PHONY : mapping/mapping.cpp.o
+
+mapping/mapping.i: mapping/mapping.cpp.i
+
+.PHONY : mapping/mapping.i
+
+# target to preprocess a source file
+mapping/mapping.cpp.i:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/mapping/mapping.cpp.i
+.PHONY : mapping/mapping.cpp.i
+
+mapping/mapping.s: mapping/mapping.cpp.s
+
+.PHONY : mapping/mapping.s
+
+# target to generate assembly for a file
+mapping/mapping.cpp.s:
+	$(MAKE) -f CMakeFiles/radarTest.dir/build.make CMakeFiles/radarTest.dir/mapping/mapping.cpp.s
+.PHONY : mapping/mapping.cpp.s
+
 rigidBodyMotion/rigidBodyMotion.o: rigidBodyMotion/rigidBodyMotion.cpp.o
 
 .PHONY : rigidBodyMotion/rigidBodyMotion.o
@@ -477,6 +504,9 @@ help:
 	@echo "... localMap/localMap.o"
 	@echo "... localMap/localMap.i"
 	@echo "... localMap/localMap.s"
+	@echo "... mapping/mapping.o"
+	@echo "... mapping/mapping.i"
+	@echo "... mapping/mapping.s"
 	@echo "... rigidBodyMotion/rigidBodyMotion.o"
 	@echo "... rigidBodyMotion/rigidBodyMotion.i"
 	@echo "... rigidBodyMotion/rigidBodyMotion.s"

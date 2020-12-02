@@ -11,6 +11,7 @@ file(REMOVE_RECURSE
   "CMakeFiles/radarTest.dir/rigidBodyMotion/rigidBodyMotion.cpp.o"
   "CMakeFiles/radarTest.dir/dataAssociationSURF/dataAssociationSURF.cpp.o"
   "CMakeFiles/radarTest.dir/localMap/localMap.cpp.o"
+  "CMakeFiles/radarTest.dir/mapping/mapping.cpp.o"
   "radarTest.pdb"
   "radarTest"
 )

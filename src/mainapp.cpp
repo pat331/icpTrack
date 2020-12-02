@@ -27,6 +27,7 @@ using namespace cv::xfeatures2d;
 #include "singleValueDecomposition2D.h"
 #include "dataAssociationSURF.h"
 #include "localMap.h"
+#include "mapping.h"
 
 #define refinement
 
@@ -99,32 +100,6 @@ int main(int argc, char *argv[]){
     gtPose.push_back(pos);
   }
 
-  //
-  // for (size_t i = 0; i < 400; i++) {
-  //   Eigen::Vector2f pos;
-  //
-  //   RSucc(0,0) = cos(gt[7].second[i]);
-  //   RSucc(0,1) = -sin(gt[7].second[i]);
-  //   RSucc(1,0) = sin(gt[7].second[i]);
-  //   RSucc(0,1) = cos(gt[7].second[i]);
-  //
-  //   tSucc(0) = gt[2].second[i]*0.5;
-  //   tSucc(1) = gt[3].second[i]*0.5;
-  //
-  //   Rf = RPrec*RSucc;
-  //   std::cerr << "Rf "<< Rf << '\n';
-  //   pos = Rf*initialPose + RPrec*tSucc + tPrec;
-  //
-  //   tPrec = RPrec*tSucc + tPrec;
-  //   // std::cerr << "tPrec "<< tPrec(0)<< '\n';
-  //   RPrec = RPrec*RSucc;
-  //   //
-  //   pos(0) = pos(0)+500;
-  //   pos(1) = pos(1)+500;
-  //
-  //   gtPose.push_back(pos);
-  //
-  // }
   RGBImage ground_truth(1000, 1000);
   ground_truth.create(1000, 1000);
   ground_truth=cv::Vec3b(255,255,255);
@@ -154,6 +129,18 @@ int main(int argc, char *argv[]){
 
   cv::Mat key1, key2, key3;
 
+  Eigen::Matrix<float, 2, 2> RotMap;
+  RotMap << 1,0,0,1;
+  Eigen::Vector2f tMap;
+  tMap << 0,0;
+  SE2 mappingMotion;
+  mappingMotion.R = RotMap;
+  mappingMotion.t = tMap;
+
+  SE2 partialMotion;
+  partialMotion.R = RotMap;
+  partialMotion.t = tMap;
+
   Eigen::Matrix<float, 2, 2> Rtot;
   Rtot << 1,0,0,1;
   Eigen::Matrix<float, 2, 2> R1;
@@ -179,8 +166,82 @@ int main(int argc, char *argv[]){
   // Itero su tutti i radarscan della cartella
   SE2 motion;
   LocalMap map, map1;
-  int firstScan = 50;
-  for(int i = firstScan; i < 2800; i++){
+  Mapping mapping;
+  int firstScan = 70;
+  for (int i = firstScan; i < 2000; i++) {
+    dataFilePng = pathRadarScanPngFiles[i];
+    dataFilePngSucc = pathRadarScanPngFiles[i+1];
+    dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
+
+    //-- Step 1: Detect the keypoints using SURF Detector
+    cv::Mat provaImageSurf = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
+    cv::Mat provaImageSurf2 = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
+    cv::Mat provaImageSurf3 = imread(dataFilePngSucc2, cv::IMREAD_GRAYSCALE);
+
+    Mat prova, prova2, prova3;
+    Mat  provaBlur, provaBlur2, cart, cartSucc, cartSucc2, cartBlur, cartBlurSucc, cartBlurSucc2;
+    // Mat provaBlura,provaBlurb,provaBlurc,provaBlurd;
+
+    prova =cropRadarScan(provaImageSurf, 11, 0, 3000, 400);
+    prova2 =cropRadarScan(provaImageSurf2, 11, 0, 3000, 400);
+    prova3 =cropRadarScan(provaImageSurf3, 11, 0, 3000, 400);
+
+    double maxRadius = 400.0;
+    Point2f center( 400, 400);
+    int flags = INTER_LINEAR + WARP_FILL_OUTLIERS + WARP_INVERSE_MAP;
+
+    warpPolar(prova, cart, Size(800,800) , center, maxRadius,  flags);
+    warpPolar(prova2, cartSucc, Size(800,800) , center, maxRadius,  flags);
+    warpPolar(prova3, cartSucc2, Size(800,800) , center, maxRadius,  flags);
+
+    threshold( cart, cart, 35, 255, 3 );
+    threshold( cartSucc, cartSucc, 35, 255, 3 );
+    threshold( cartSucc2, cartSucc2, 35, 255, 3 );
+
+    blur( cart, cartBlur, Size(3,3) );
+    blur( cartSucc, cartBlurSucc, Size(3,3) );
+    blur( cartSucc2, cartBlurSucc2, Size(3,3) );
+
+    if (i==firstScan) {
+      KeyAndDesc kd1, kd2;
+      kd1 = mapping.findScanKeyPoint(cartBlur);
+      mapping.initMap(kd1, mappingMotion);
+      kd2 = mapping.findScanKeyPoint(cartBlurSucc);
+      std::vector<DMatch> match;
+      match = mapping.matchMap(kd2);
+      mappingMotion = mapping.scanMap(kd2,match);
+      mapping.robotMotion();
+      mapping.insertKeyFrame(kd2);
+      continue;
+    }
+
+    KeyAndDesc kd2;
+    kd2 = mapping.findScanKeyPoint(cartBlurSucc);
+    std::vector<DMatch> match;
+    match = mapping.matchMap(kd2);
+    mappingMotion = mapping.scanMap(kd2,match);
+    mapping.robotMotion();
+    bool reset;
+    reset = mapping.resetMap();
+    if (reset == 0) {
+      mapping.insertKeyFrame(kd2);
+      // mapping.clearMap();
+      // SE2 restartMotion;
+      // restartMotion.R << 1,0,0,1;
+      // restartMotion.t << 0,0;
+      // mapping.initMap(kd2, restartMotion);
+    } else if (reset == 1) {
+      mapping.clearMap();
+      SE2 restartMotion;
+      restartMotion.R << 1,0,0,1;
+      restartMotion.t << 0,0;
+      mapping.initMap(kd2, restartMotion);
+    }
+    std::cerr << "i = "<< i << '\n';
+  }
+  mapping.dispMotion();
+
+  for(int i = firstScan; i < 1; i++){
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];
     dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
@@ -351,7 +412,11 @@ int main(int argc, char *argv[]){
     Eigen::Vector2f translationVectorf;
     translationVectorf = mean2 - Rf * mean1;
     // Error estimation
-    
+    Eigen::Matrix<float, 2, 2> Rotation_gt;
+    Eigen::Vector2f translation_gt;
+    Rotation_gt << cos(dTheta[i]),-sin(dTheta[i]),sin(dTheta[i]),cos(dTheta[i]);
+    translation_gt << dx[i],dy[i];
+    map.errorEstimation(Rotation_gt,translation_gt,Rf,translationVectorf);
     //
     R2 = Rf.inverse();
     t2 = -R2*translationVectorf;

@@ -57,7 +57,10 @@ class LocalMap{
 
     void fillNKS(int numberKeyPoints);
 
-    void errorEstimation();
+    void errorEstimation(const Eigen::Matrix<float, 2, 2>& R_gt,
+                         const Eigen::Vector2f& t_gt,
+                         const Eigen::Matrix<float, 2, 2> R,
+                         const Eigen::Vector2f& t);
 
 
   protected:
@@ -76,6 +79,8 @@ class LocalMap{
 
     std::vector<int> _numberKeyPointsInScan;
 
+    float _totalErrorTranslation;
+    float _totalErrorRotation;
 
 
 

@@ -8,7 +8,9 @@
 #include <iostream>
 #include <unistd.h>
 #include "opencv2/opencv.hpp"
-
+using namespace cv;
+using namespace std;
+// using namespace cv::xfeatures2d;
 namespace pr {
 
   //ds opencv keys
@@ -252,5 +254,10 @@ namespace pr {
     Eigen::Matrix<float, 2, 2> R;
     Eigen::Vector2f t;
   }SE2;
+
+  typedef struct{
+    std::vector<KeyPoint> keypoints;
+    Mat                   descriptors;
+  }KeyAndDesc;
 
 }
