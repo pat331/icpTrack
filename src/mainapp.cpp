@@ -85,7 +85,7 @@ int main(int argc, char *argv[]){
   Eigen::Vector2f tSucc;
   tPrec << 0,0;
 
-  for (size_t i = 0; i < gt[0].second.size(); i++) {
+  for (size_t i = 0; i <1935; i++) {
     Eigen::Vector2f pos;
     RSucc << cos(dTheta[i]),-sin(dTheta[i]),sin(dTheta[i]),cos(dTheta[i]);
     tSucc << dx[i]*0.3,dy[i]*0.3;
@@ -167,8 +167,9 @@ int main(int argc, char *argv[]){
   SE2 motion;
   LocalMap map, map1;
   Mapping mapping;
-  int firstScan = 70;
-  for (int i = firstScan; i < 2000; i++) {
+  int firstScan = 1600;
+
+  for (int i = firstScan; i < 2100; i++) {
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];
     dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
@@ -215,12 +216,20 @@ int main(int argc, char *argv[]){
       continue;
     }
 
-    KeyAndDesc kd2;
+    KeyAndDesc kd1,kd2;
+    kd1 = mapping.findScanKeyPoint(cartBlur);
     kd2 = mapping.findScanKeyPoint(cartBlurSucc);
     std::vector<DMatch> match;
     match = mapping.matchMap(kd2);
     mappingMotion = mapping.scanMap(kd2,match);
     mapping.robotMotion();
+
+    Eigen::Matrix<float, 2, 2> Rotation_gt;
+    Eigen::Vector2f translation_gt;
+    Rotation_gt << cos(dTheta[i+1]),-sin(dTheta[i+1]),sin(dTheta[i+1]),cos(dTheta[i+1]);
+    translation_gt << dx[i+1],dy[i+1];
+    mapping.errorEstimation(Rotation_gt, translation_gt);
+
     bool reset;
     reset = mapping.resetMap();
     if (reset == 0) {
@@ -231,15 +240,24 @@ int main(int argc, char *argv[]){
       // restartMotion.t << 0,0;
       // mapping.initMap(kd2, restartMotion);
     } else if (reset == 1) {
+      // mapping.clearMap();
+      // SE2 restartMotion;
+      // restartMotion.R << 1,0,0,1;
+      // restartMotion.t << 0,0;
+      // mapping.initMap(kd2, restartMotion);
       mapping.clearMap();
       SE2 restartMotion;
-      restartMotion.R << 1,0,0,1;
-      restartMotion.t << 0,0;
-      mapping.initMap(kd2, restartMotion);
+      restartMotion.R = mappingMotion.R;
+      restartMotion.t = mappingMotion.t;
+      mapping.initMap(kd1, restartMotion);
+      mapping.insertFrameReset(kd2, mappingMotion);
     }
     std::cerr << "i = "<< i << '\n';
   }
   mapping.dispMotion();
+  mapping.dispError();
+
+  return 0;
 
   for(int i = firstScan; i < 1; i++){
     dataFilePng = pathRadarScanPngFiles[i];
