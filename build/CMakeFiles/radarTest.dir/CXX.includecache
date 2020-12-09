@@ -144,6 +144,10 @@ opencv2/opencv.hpp
 defs.h
 ../include/defs.h
 
+../include/smicp_solver.h
+defs.h
+../include/defs.h
+
 ../keyPointExtraction/preProcessRadarScan.h
 iostream
 -
@@ -189,6 +193,8 @@ rigidBodyMotion.h
 ../localMap/rigidBodyMotion.h
 defs.h
 ../localMap/defs.h
+smicp_solver.h
+../localMap/smicp_solver.h
 
 ../mapping/mapping.h
 iostream
@@ -215,6 +221,8 @@ rigidBodyMotion.h
 ../mapping/rigidBodyMotion.h
 defs.h
 ../mapping/defs.h
+smicp_solver.h
+../mapping/smicp_solver.h
 
 ../rigidBodyMotion/rigidBodyMotion.h
 iostream
@@ -571,6 +579,8 @@ rigidBodyMotion.h
 /home/luca/Documents/tesi/icpTrack/localMap/rigidBodyMotion.h
 defs.h
 /home/luca/Documents/tesi/icpTrack/localMap/defs.h
+smicp_solver.h
+/home/luca/Documents/tesi/icpTrack/localMap/smicp_solver.h
 
 /home/luca/Documents/tesi/icpTrack/mapping/mapping.cpp
 iostream
@@ -625,6 +635,8 @@ rigidBodyMotion.h
 /home/luca/Documents/tesi/icpTrack/mapping/rigidBodyMotion.h
 defs.h
 /home/luca/Documents/tesi/icpTrack/mapping/defs.h
+smicp_solver.h
+/home/luca/Documents/tesi/icpTrack/mapping/smicp_solver.h
 
 /home/luca/Documents/tesi/icpTrack/rigidBodyMotion/rigidBodyMotion.cpp
 iostream

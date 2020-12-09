@@ -135,3 +135,18 @@ std::vector<int> Grasp(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic
 
     return Q;
 }
+
+IntPairVector matchPair(const std::vector<DMatch>& match){
+
+  IntPairVector correspondences;
+  for (size_t i = 0; i < match.size(); i++) {
+    IntPair correspondence;
+    correspondence.second = match[i].queryIdx;
+    correspondence.first = match[i].trainIdx;
+    // std::cerr << "match[i].queryIdx "<< match[i].queryIdx << '\n';
+    // std::cerr << "match[i].trainIdx "<< match[i].trainIdx << '\n';
+
+    correspondences.push_back(correspondence);
+  }
+  return correspondences;
+               }

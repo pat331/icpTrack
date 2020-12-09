@@ -28,10 +28,9 @@ namespace pr {
                                     const Eigen::Vector2f& from_point,
                                     const Eigen::Vector2f& to_point){
     // compute the prediction
+
     Eigen::Vector2f predicted_point = _transform * from_point;
-
     error=predicted_point-to_point;
-
     // std::cout << "error: \n" << error << std::endl;
 
     // compute the jacobian of the transformation
@@ -54,11 +53,14 @@ namespace pr {
     _num_inliers=0;
     _chi_inliers=0;
     _chi_outliers=0;
+
     for (const IntPair& correspondence: correspondences){
+
       Eigen::Vector2f e;
       Matrix2_3f J;
       int ref_idx=correspondence.first;
       int curr_idx=correspondence.second;
+
       bool inside=errorAndJacobian(e,
                                    J,
                                    (*_from_points)[curr_idx],
@@ -70,18 +72,20 @@ namespace pr {
 
       _H+=J.transpose()*J;
       _b+=J.transpose()*e;
+
     }
   }
 
   bool SMICPSolver::oneRound(const IntPairVector& correspondences, bool keep_outliers){
     using namespace std;
+    std::cerr << "linearize" << '\n';
     linearize(correspondences, keep_outliers);
 
     //compute a solution
     Eigen::Vector3f dx = _H.ldlt().solve(-_b);
 
     _transform = v2t(dx)*_transform;
-    
+
     return true;
   }
 }

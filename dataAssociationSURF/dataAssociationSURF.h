@@ -27,3 +27,5 @@ std::vector<int> createConsistencyMatrix(const vector<KeyPoint>& keypoints1,
                                          const vector<KeyPoint>& keypoints2,
                                          const vector< DMatch >& matches);
 std::vector<int> Grasp(const Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> &consistencyMatrix);
+
+IntPairVector matchPair(const std::vector<DMatch>& match);

@@ -10,6 +10,7 @@
 #include "points_utils.h"
 #include "rigidBodyMotion.h"
 #include "defs.h"
+#include "smicp_solver.h"
 
 using namespace cv;
 using namespace std;

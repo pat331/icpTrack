@@ -1946,6 +1946,7 @@ CMakeFiles/radarTest.dir/localMap/localMap.cpp.o
  ../fft-real/src/def.h
  ../include/defs.h
  ../include/points_utils.h
+ ../include/smicp_solver.h
  ../rigidBodyMotion/rigidBodyMotion.h
  /home/luca/Documents/tesi/icpTrack/localMap/localMap.cpp
  /home/luca/Documents/tesi/icpTrack/localMap/localMap.h
@@ -2279,6 +2280,7 @@ CMakeFiles/radarTest.dir/mapping/mapping.cpp.o
  ../fft-real/src/def.h
  ../include/defs.h
  ../include/points_utils.h
+ ../include/smicp_solver.h
  ../rigidBodyMotion/rigidBodyMotion.h
  /home/luca/Documents/tesi/icpTrack/mapping/mapping.cpp
  /home/luca/Documents/tesi/icpTrack/mapping/mapping.h
@@ -3680,6 +3682,7 @@ CMakeFiles/radarTest.dir/src/mainapp.cpp.o
  ../fft-real/src/OscSinCos.hpp
  ../fft-real/src/def.h
  ../include/points_utils.h
+ ../include/smicp_solver.h
  ../keyPointExtraction/preProcessRadarScan.h
  ../localMap/localMap.h
  ../mapping/mapping.h
