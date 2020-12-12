@@ -18,7 +18,7 @@ using namespace cv;
 using namespace std;
 using namespace cv::xfeatures2d;
 using namespace pr;
-
+using namespace Eigen;
 Mapping::Mapping(){
   _totalMotion.R << 1,0,0,1;
   _totalMotion.t << 0,0;
@@ -50,12 +50,6 @@ void Mapping::dispMotion(){
   RGBImage local_image(1500, 1500);
   local_image.create(1500, 1500);
   local_image=cv::Vec3b(255,255,255);
-
-  for (size_t i = 0; i < _robotPose.size(); i++) {
-    // _robotPose[i] <<  ((_robotPose[i](0)*1)+400)*0.2, ((_robotPose[i](1)*1)+400)*0.2;
-    _robotPose[i] <<  _robotPose[i](0), _robotPose[i](1);
-  }
-
   drawPoints(local_image, _robotPose, cv::Scalar(0,0,255),1);
   cv::imshow("MAPPING", local_image);
   waitKey();
@@ -72,12 +66,12 @@ KeyAndDesc Mapping::findScanKeyPoint(const Mat& scan){
   KeyAndDesc kd;
   kd.keypoints = keypoints;
   for (size_t i = 0; i < kd.keypoints.size(); i++) {
-    kd.keypoints[i].pt.x *= 0.5;
-    kd.keypoints[i].pt.y *= 0.5;
+    // kd.keypoints[i].pt.x *= 0.5;
+    // kd.keypoints[i].pt.y *= 0.5;
     // float prova1 = kd.keypoints[i].pt.x;
     // float prova2 = kd.keypoints[i].pt.y;
-    // kd.keypoints[i].pt.x *= 0.044;
-    // kd.keypoints[i].pt.y *= 0.044;
+    kd.keypoints[i].pt.x *= 0.044;
+    kd.keypoints[i].pt.y *= 0.044;
   }
   kd.descriptors = descriptors;
   return kd;
@@ -132,129 +126,83 @@ std::vector<DMatch> Mapping::matchMap(const KeyAndDesc& kd){
 
 SE2 Mapping::scanMap(const KeyAndDesc& kd2,
                      const std::vector<DMatch>& match){
-
-  // Devo portarmi i keypoint nel riferimento della mappa.
-  Eigen::Vector2f pointInFrameCoord;
-  Eigen::Vector2f trasformedPoint;
-  std::vector<KeyPoint> kd2MapFrame = kd2.keypoints;
-  for (size_t i = 0; i < kd2MapFrame.size(); i++) {
-    pointInFrameCoord << kd2MapFrame[i].pt.x, kd2MapFrame[i].pt.y;
-    trasformedPoint = _motion.R*pointInFrameCoord + _motion.t;
-    kd2MapFrame[i].pt.x = trasformedPoint(0);
-    kd2MapFrame[i].pt.y = trasformedPoint(1);
+  
+  // tg use holy eigen structure to represent 2d vectors
+  using Vector2fVector = std::vector<Vector2f,Eigen::aligned_allocator<Vector2f>>;
+  Vector2fVector map_points, scan_points;
+  // tg extract number of points involved in the match
+  // and allocate data structures
+  size_t num_matched_points = match.size();
+  map_points.reserve(num_matched_points);
+  scan_points.reserve(num_matched_points);
+  // for each match ( we dont need to transform all the map )
+  for (const DMatch& correspondence : match) {
+    const auto& mp = _mapPoint[correspondence.queryIdx];
+    const auto& sp = kd2.keypoints[correspondence.trainIdx];
+    // tg transform map point in previous frame
+    Vector2f map_point = _motion.R.transpose() * (Vector2f(mp.pt.x, mp.pt.y) - _motion.t);
+    // tg add points to data structures
+    map_points.emplace_back(map_point);
+    scan_points.emplace_back(Vector2f(sp.pt.x,sp.pt.y));
   }
-
-  Eigen::Matrix<float, 2, 2> Rf, R2, Rtot;
-  Eigen::Vector2f t2, translationVectorTot;
-
-  Rf = rigidBodyMotionSurf(_mapPoint, kd2MapFrame, match); // questa è la rotazione che porta da ref1->ref2
-  // Rf << Rf(0,0)*0.8,Rf(0,1)*0.8,Rf(1,0)*0.8,Rf(1,1)*0.8;
+  // tg compute mean point scan
+  Vector2f mean_scan = Vector2f::Zero();
+  for(const Vector2f& p : scan_points){
+    mean_scan += p;
+  }
+  mean_scan /= static_cast<float>(num_matched_points);
+  // tg compute mean point map
+  Vector2f mean_map = Vector2f::Zero();
+  for(const Vector2f& p : map_points){
+    mean_map += p;
+  }
+  mean_map /= static_cast<float>(num_matched_points);
+  // tg compute cross-correlation of point distribution
+  Matrix2f sigma = Matrix2f::Zero();
+  for(size_t i=0; i<num_matched_points; ++i){
+    sigma += (map_points[i] - mean_map) * (scan_points[i] - mean_scan).transpose();
+  }
+  sigma /= static_cast<float>(num_matched_points);
+  // recondition rotation matrix
+  Eigen::JacobiSVD<Eigen::Matrix2f> svd(sigma, Eigen::ComputeThinU | Eigen::ComputeThinV);
+  Matrix2f R = svd.matrixU() * svd.matrixV().transpose();
+  
   std::cerr << "   ^^^    " << '\n';
-  std::cerr << " ROTATION " << Rf <<'\n';
-  Eigen::Vector2f mean1;
-  mean1 = meanScanSurf1(_mapPoint, match);
-  Eigen::Vector2f mean2;
-  mean2 = meanScanSurf2(kd2MapFrame, match);
-
-  Eigen::Vector2f translationVectorf;
-  translationVectorf = mean2 - Rf * mean1;
-  std::cerr << "+++ translationVectorf +++ "<< translationVectorf << '\n';
-  _highTranslation = translationVectorf;
+  std::cerr << " Rotation " << R <<'\n';
+  // tg compute translation
+  Eigen::Vector2f t = mean_map - R * mean_scan;
+  std::cerr << "+++ Translation +++ "<< t << '\n';
+  _highTranslation = t;
 
   // Dont go further if there is essentially no motion
-  if (sqrt(pow(translationVectorf(0),2)+pow(translationVectorf(1),2))<0.2) {
-    std::cerr << "No MoTiOn" << '\n';
+  if (t.norm() < 0.2) {
+    std::cerr << "No MoTion" << '\n';
+    // tg mi fa sanguinare il culo
     SE2 noMotion;
     noMotion.R.setIdentity();
     noMotion.t << 0,0;
     return noMotion;
   }
-  Eigen::JacobiSVD<Eigen::MatrixXf> svd(Rf, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  // Eigen::JacobiSVD<Eigen::Matrix2f> svd(Rf, Eigen::ComputeThinU | Eigen::ComputeThinV);
-  float det_uv = (svd.matrixU() * svd.matrixV().transpose()).determinant();
-  // Eigen::Vector3f singular_values(1.f, 1.f, det_uv);
-  Eigen::Vector2f singular_values( 1.f, det_uv);
-  Rf = svd.matrixU() * singular_values.asDiagonal() * svd.matrixV().transpose();
-
-
-  //////////////////////////////////////////////////////////////////////////////
-  // Prova ICP
-  // SMICPSolver solver;
-  // // Put the vector match into a vector of pair
-  // IntPairVector correspondences;
-  // correspondences = matchPair(match);
-  // // std::cerr << "correspondences size "<< correspondences<< '\n';
-  // // Put the vector of keypoints of map and keyframe into a Vector2fVector
-  // Vector2fVector mapPoints;
-  // Vector2fVector framePoints;
-  // for (size_t i = 0; i < _mapPoint.size(); i++) {
-  //   Eigen::Vector2f mapPoint;
-  //   mapPoint << _mapPoint[i].pt.x, _mapPoint[i].pt.y;
-  //   mapPoints.push_back(mapPoint);
-  // }
-  // for (size_t i = 0; i < kd2MapFrame.size(); i++) {
-  //   Eigen::Vector2f framePoint;
-  //   framePoint << kd2MapFrame[i].pt.x, kd2MapFrame[i].pt.y;
-  //   framePoints.push_back(framePoint);
-  // }
-  //
-  // Eigen::Isometry2f initialGuess;
-  // initialGuess.setIdentity();
-  // for (size_t i = 0; i < 2; i++) {
-  //   for (size_t j = 0; j < 2; j++) {
-  //     initialGuess(i,j) = Rf(i,j);
-  //   }
-  // }
-  // for (size_t i = 0; i < 2; i++) {
-  //   initialGuess(i,2) = translationVectorf(i);
-  // }
-  // std::cerr << "initialGuess "<< initialGuess.matrix() << '\n';
-  // // initialGuess.setIdentity();
-  // // Icp solver initialization
-  // solver.init(initialGuess, mapPoints, framePoints);
-  // for (int n_round=0; n_round < 5; n_round++){
-  //   solver.oneRound(correspondences, false);
-  // }
-  // Eigen::Isometry2f refinedMov;
-  // refinedMov = solver.transform();
-  // std::cerr << "REFINED MOV "<< refinedMov.matrix() << '\n';
-  //////////////////////////////////////////////////////////////////////////////
-
-  //Quantities for Error estimation
-  _scanMotion.R = Rf;
-  _scanMotion.t = translationVectorf;
-  //
-  // Map motion inversa: porto la mappa nel frame dello scan (parziale, perché dopo pochi scan la elimino)
-  // _total.R = _total.R*Rf;
-  // _total.t = _total.R*translationVectorf+_total.t;
-
-  R2 = Rf.inverse();
-  t2 = -R2*translationVectorf;
-  std::cerr << " °° t2 °° "<< t2 << '\n';
-
-  Rtot = _motion.R*R2;
-  translationVectorTot = _motion.R*t2+_motion.t;
-  _motion.R = Rtot;
-  _motion.t = translationVectorTot;
-
-  // Total motion (motion del robot: totale la porto fino alla fine)
-  Rtot = _totalMotion.R*R2;
-  translationVectorTot = _totalMotion.R*t2+_totalMotion.t;
-  _totalMotion.R = Rtot;
-  _totalMotion.t = translationVectorTot;
+  // tg i put the inverse here to keep consistency outside of this function
+  _scanMotion.R = R.transpose();
+  _scanMotion.t = - R.transpose() * t;
+  // tg vomito male per la struct SE2
+  // now transform is from current frame to last frame
+  _motion.R *= R;
+  _motion.t += t;
+  _totalMotion.R *= R;
+  _totalMotion.t += t;
 
   std::cerr << " §§§§§§§§§§ " << '\n';
   std::cerr << "total rotation "<< _totalMotion.R << '\n';
   std::cerr << "total motion "<< _totalMotion.t << '\n';
 
-
+  // aiuto dio ti prego uccidimi
   SE2 robMotion;
-  robMotion.R = R2;
-  robMotion.t = t2;
-
+  robMotion.R = R;
+  robMotion.t = t;
   return robMotion;
-
-            }
+}
 
 void Mapping::robotMotion(){
 

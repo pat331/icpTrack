@@ -250,12 +250,16 @@ namespace pr {
   typedef std::pair<int,int> IntPair;
   typedef std::vector<IntPair > IntPairVector;
 
-  typedef struct{
+  struct SE2 {
     Eigen::Matrix<float, 2, 2> R;
     Eigen::Vector2f t;
-  }SE2;
+    SE2() {
+      R.setIdentity();
+      t.setZero();
+    }
+  }
 
-  typedef struct{
+  typedef struct {
     std::vector<KeyPoint> keypoints;
     Mat                   descriptors;
   }KeyAndDesc;
