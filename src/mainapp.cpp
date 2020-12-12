@@ -88,7 +88,7 @@ int main(int argc, char *argv[]){
   for (size_t i = 0; i <1935; i++) {
     Eigen::Vector2f pos;
     RSucc << cos(dTheta[i]),-sin(dTheta[i]),sin(dTheta[i]),cos(dTheta[i]);
-    tSucc << dx[i]*0.3,dy[i]*0.3;
+    tSucc << dx[i],dy[i];
     pos = RSucc*RPrec*initialPose + RPrec*tSucc + tPrec;
     tPrec = RPrec*tSucc + tPrec;
     RPrec = RPrec*RSucc;
@@ -133,9 +133,11 @@ int main(int argc, char *argv[]){
   RotMap << 1,0,0,1;
   Eigen::Vector2f tMap;
   tMap << 0,0;
-  SE2 mappingMotion;
+  SE2 mappingMotion, mappingMotionPrec;
   mappingMotion.R = RotMap;
   mappingMotion.t = tMap;
+  mappingMotionPrec.R = RotMap;
+  mappingMotionPrec.t = tMap;
 
   SE2 partialMotion;
   partialMotion.R = RotMap;
@@ -167,9 +169,9 @@ int main(int argc, char *argv[]){
   SE2 motion;
   LocalMap map, map1;
   Mapping mapping;
-  int firstScan = 1600;
+  int firstScan = 1653;
 
-  for (int i = firstScan; i < 2100; i++) {
+  for (int i = firstScan; i < 1657; i++) {
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];
     dataFilePngSucc2 = pathRadarScanPngFiles[i+2];
@@ -178,6 +180,11 @@ int main(int argc, char *argv[]){
     cv::Mat provaImageSurf = imread(dataFilePng, cv::IMREAD_GRAYSCALE);
     cv::Mat provaImageSurf2 = imread(dataFilePngSucc, cv::IMREAD_GRAYSCALE);
     cv::Mat provaImageSurf3 = imread(dataFilePngSucc2, cv::IMREAD_GRAYSCALE);
+
+
+    Mat img2;
+    provaImageSurf.convertTo(img2, CV_32FC1);
+
 
     Mat prova, prova2, prova3;
     Mat  provaBlur, provaBlur2, cart, cartSucc, cartSucc2, cartBlur, cartBlurSucc, cartBlurSucc2;
@@ -210,7 +217,7 @@ int main(int argc, char *argv[]){
       kd2 = mapping.findScanKeyPoint(cartBlurSucc);
       std::vector<DMatch> match;
       match = mapping.matchMap(kd2);
-      mappingMotion = mapping.scanMap(kd2,match);
+      mappingMotionPrec = mapping.scanMap(kd2,match);
       mapping.robotMotion();
       mapping.insertKeyFrame(kd2);
       continue;
@@ -224,27 +231,48 @@ int main(int argc, char *argv[]){
     mappingMotion = mapping.scanMap(kd2,match);
     mapping.robotMotion();
 
+    // Error estimation
     Eigen::Matrix<float, 2, 2> Rotation_gt;
     Eigen::Vector2f translation_gt;
     Rotation_gt << cos(dTheta[i+1]),-sin(dTheta[i+1]),sin(dTheta[i+1]),cos(dTheta[i+1]);
     translation_gt << dx[i+1],dy[i+1];
-    mapping.errorEstimation(Rotation_gt, translation_gt);
+    // mapping.errorEstimation(Rotation_gt, translation_gt);
+
+    // Ground-truth quantities
+    Eigen::Vector3f vector_gt ,vector_gt1, vector_gt2;
+    vector_gt1 << dx[i], dy[i], dTheta[i];
+    vector_gt2 << dx[i+1], dy[i+1], dTheta[i+1];
+    Eigen::Isometry2f isometry_gt, isometry_gt1, isometry_gt2;
+    isometry_gt1 = v2t(vector_gt1);
+    isometry_gt2 = v2t(vector_gt2);
+    isometry_gt = isometry_gt1 * isometry_gt2;
+    vector_gt = t2v(isometry_gt);
+    // Mapping quantities
+    Eigen::Isometry2f isometry, isometry_1, isometry_2;
+    isometry_1.setIdentity();
+    isometry_1.translation()= mappingMotionPrec.t;
+    isometry_1.linear() << mappingMotionPrec.R(0,0), mappingMotionPrec.R(0,1),
+                           mappingMotionPrec.R(1,0), mappingMotionPrec.R(1,1);
+
+    isometry_2.setIdentity();
+    isometry_2.translation()= mappingMotion.t;
+    isometry_2.linear() << mappingMotion.R(0,0), mappingMotion.R(0,1),
+                           mappingMotion.R(1,0), mappingMotion.R(1,1);
+
+    isometry = isometry_1 * isometry_2;
+    // Eigen::Vector3f vector_comp;
+    // vector_comp = t2v(isometry);
+    mapping.errorEstimation(isometry_gt, isometry);
+    mappingMotionPrec = mappingMotion;
+    //
 
     bool reset;
     reset = mapping.resetMap();
     if (reset == 0) {
       mapping.insertKeyFrame(kd2);
-      // mapping.clearMap();
-      // SE2 restartMotion;
-      // restartMotion.R << 1,0,0,1;
-      // restartMotion.t << 0,0;
-      // mapping.initMap(kd2, restartMotion);
+
     } else if (reset == 1) {
-      // mapping.clearMap();
-      // SE2 restartMotion;
-      // restartMotion.R << 1,0,0,1;
-      // restartMotion.t << 0,0;
-      // mapping.initMap(kd2, restartMotion);
+
       mapping.clearMap();
       SE2 restartMotion;
       restartMotion.R = mappingMotion.R;
@@ -258,7 +286,7 @@ int main(int argc, char *argv[]){
   mapping.dispError();
 
   return 0;
-
+ ///////////////////////////////////////////////////////////////////////////////////
   for(int i = firstScan; i < 1; i++){
     dataFilePng = pathRadarScanPngFiles[i];
     dataFilePngSucc = pathRadarScanPngFiles[i+1];

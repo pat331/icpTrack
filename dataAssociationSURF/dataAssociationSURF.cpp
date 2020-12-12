@@ -21,7 +21,9 @@ std::vector<int> createConsistencyMatrix(const vector<KeyPoint>& keypoints1,
                                          const vector<KeyPoint>& keypoints2,
                                          const vector< DMatch >& matches){
 
-  float deltaC = 3; // Can be much smaller
+  // float deltaC = 3*0.0438; // Can be much smaller
+  float deltaC = 3*0.5; // Can be much smaller
+
   float distanceOnScan1;
   float distanceOnScan2;
   Eigen::Matrix<float, Eigen::Dynamic, Eigen::Dynamic> consistencyMatrix;
@@ -39,6 +41,9 @@ std::vector<int> createConsistencyMatrix(const vector<KeyPoint>& keypoints1,
       }
       distanceOnScan2 = sqrt(pow(keypoints1[matches[j].queryIdx].pt.x - keypoints2[matches[j].trainIdx].pt.x,2)
                             +pow(keypoints1[matches[j].queryIdx].pt.y - keypoints2[matches[j].trainIdx].pt.y,2));
+      // std::cerr << "distanceInScan1 "<< distanceOnScan1 << '\n';
+      // std::cerr << "distanceInScan2 "<< distanceOnScan2 << '\n';
+      // std::cerr << "difference  "<< abs(distanceOnScan1 - distanceOnScan2) << '\n';
       if (abs(distanceOnScan1 - distanceOnScan2)< deltaC) {
         consistencyMatrix(i,j) = 1;
       }

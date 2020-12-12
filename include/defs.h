@@ -101,7 +101,7 @@ namespace pr {
   }
 
   inline Eigen::Vector3f t2v(const Eigen::Isometry2f& t){
-    std::cout << " t2v printato main" << std::endl;
+    // std::cout << " t2v printato main" << std::endl;
     Eigen::Vector3f v;
     v.head<2>()=t.translation();
     v(2) = atan2(t.linear()(1,0), t.linear()(0,0));
